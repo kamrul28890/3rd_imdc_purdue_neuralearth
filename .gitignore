@@ -3,7 +3,7 @@ data/raw/*
 !data/raw/data_imdc_2026/**
 data/external/
 data/processed/
-models/
+/models/
 *.pyc
 __pycache__/
 .ipynb_checkpoints/
