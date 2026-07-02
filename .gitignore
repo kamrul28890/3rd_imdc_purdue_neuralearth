@@ -1,4 +1,6 @@
-data/raw/
+data/raw/*
+!data/raw/data_imdc_2026/
+!data/raw/data_imdc_2026/**
 data/external/
 data/processed/
 models/

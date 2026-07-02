@@ -9,6 +9,7 @@ This repository contains an IMDC 2026 dengue/chikungunya forecasting pipeline fo
 - `tests/`: unit tests for folds, leakage checks, metrics, and baseline harness behavior.
 - `reports/`: report source and rendered PDF.
 - `results/`: generated figures and baseline metric outputs.
+- `data/raw/data_imdc_2026/`: raw IMDC 2026 dataset files tracked with Git LFS.
 
 ## Setup
 
@@ -26,4 +27,11 @@ pytest
 
 ## Data And Local Artifacts
 
-Large raw/processed data, model artifacts, cache files, notebook checkpoints, and local environment files are intentionally excluded from Git. The committed reports and results provide the current analysis outputs without bundling large source datasets or secrets.
+Most large raw/processed data, model artifacts, cache files, notebook checkpoints, and local environment files are intentionally excluded from Git. The committed reports and results provide the current analysis outputs, and the IMDC 2026 raw dataset is included separately through Git LFS.
+
+The IMDC 2026 raw dataset under `data/raw/data_imdc_2026/` is tracked with Git LFS. After cloning, install Git LFS and fetch the data:
+
+```bash
+git lfs install
+git lfs pull
+```
