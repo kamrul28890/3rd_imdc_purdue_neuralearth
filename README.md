@@ -19,13 +19,21 @@ pick up from here.
 | 2. Backtesting harness + baselines | ✅ Done |
 | 3. Classical ML (LightGBM + CQR) | ✅ Done |
 | 4. Deep learning (GRU + NegBinom) | ✅ Done |
-| 5. Mechanistic (EpiScanner) | ⛔ **Blocked — needs a mosqlimate.org API key** |
+| 5. Mechanistic | ✅ Done — local reimplementation (EpiScanner API is down; not needed) |
 | 6. Ensemble | ✅ Done |
-| 7. Submission packaging | ⬜ Not started |
-| 8. Paper | ⬜ Not started |
+| 7. Submission formatting + validation | ✅ Done (upload pending model registration) |
+| 8. Paper | 🟡 Draft — `paper/imdc_paper.pdf` |
+| Optional tracks (chik-state, dengue/chik cities) | ✅ Done — 231 validated submission files |
 
-**47 automated tests pass** (`pytest tests/`). Phases 2–4 + 6 are documented in
-`reports/modeling_results_report.pdf`. Full roadmap in `docs/PLAN.md`.
+**62 automated tests pass** (`pytest tests/`). Phases 2–4 + 6 documented in
+`reports/modeling_results_report.pdf`; PNAS-style manuscript draft in `paper/`.
+Full roadmap in `docs/PLAN.md`.
+
+**To actually submit:** register a model at mosqlimate.org (web UI — the API cannot
+create models; you have none yet), then run `python -m imdc.submission.upload <owner/repo>`
+(add `--publish` to go live). Your API key works and is in `.env` (gitignored).
+The EpiScanner API endpoint is currently down (HTTP 500), which is why Phase 5 is a
+local reimplementation.
 
 ### Headline result (backtest, 26 states × 4 folds)
 

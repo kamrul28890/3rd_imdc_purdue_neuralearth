@@ -1,0 +1,127 @@
+\documentclass[9pt,twocolumn,twoside]{article}
+
+\usepackage[a4paper,margin=1.8cm]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{titlesec}
+\usepackage{authblk}
+
+\hypersetup{colorlinks=true, linkcolor=blue!50!black, urlcolor=blue!50!black, citecolor=blue!50!black}
+\captionsetup{font=small, labelfont=bf}
+\titleformat{\section}{\normalfont\large\bfseries}{\thesection.}{0.5em}{}
+\titleformat{\subsection}{\normalfont\bfseries}{\thesubsection.}{0.5em}{}
+
+\title{\vspace{-1.5em}\textbf{Probabilistic dengue and chikungunya forecasting in Brazil:\\
+a systematic model comparison for the 3rd Infodengue--Mosqlimate Dengue Challenge}}
+\author[1]{Author One}
+\author[1]{Author Two}
+\affil[1]{Institution (\texttt{DRAFT --- placeholder authors/affiliations})}
+\date{\today}
+
+\begin{document}
+\twocolumn[
+\begin{@twocolumnfalse}
+\maketitle
+
+\begin{center}
+\begin{minipage}{0.9\textwidth}
+\small
+\textbf{Significance.} Dengue is expanding in range and severity across Brazil, and 2024 brought a record epidemic roughly four times any prior year. Accurate, well-calibrated probabilistic forecasts help health systems prepare, but which modeling approach to trust is unclear. Evaluating statistical, machine-learning, deep-learning, and semi-mechanistic models on identical retrospective backtests of the 26 mandatory Brazilian states, we find that no single model is best across seasons: a deep network is most accurate in normal seasons yet fails catastrophically on the 2024 outlier, while an unweighted ensemble is the most robust. We further show that which model ``wins'' depends on whether performance is weighted by case magnitude or by forecasting unit --- a metric choice that materially changes conclusions.
+\vspace{0.5em}
+
+\textbf{Abstract.} We report a systematic, leakage-controlled comparison of probabilistic forecasting models for the 3rd Infodengue--Mosqlimate Dengue Challenge (IMDC 2026), which asks for weekly state-level dengue forecasts across Brazil with full predictive intervals. Using a backtesting harness scored by the weighted interval score (WIS), we evaluate seven models --- three statistical baselines, a gradient-boosted quantile-regression model, a global recurrent neural network with a negative-binomial head, a semi-mechanistic epidemic-trajectory model, and their ensemble --- over four retrospective seasons, one of which contains the historic 2024 outbreak. An unweighted quantile-median ensemble achieves the best overall WIS (1288 vs.\ 1309 for the strongest single model) and the most stable performance across seasons. The best single model, however, differs by aggregation and by disease: the deep network leads on a scale-free per-unit metric but is the worst model on the outlier season, the mechanistic model leads on magnitude-weighted mean WIS, and for chikungunya the gradient-boosted model alone beats the ensemble. Interval calibration, corrected via conformal methods, further separates the models. Our results argue for ensembles and for reporting both magnitude- and unit-weighted skill in epidemic forecasting evaluations. All code, backtests, and validated submissions for four challenge tracks are openly released.
+\vspace{1em}
+\end{minipage}
+\end{center}
+\end{@twocolumnfalse}
+]
+
+\section{Introduction}
+Dengue is among the fastest-growing mosquito-borne diseases worldwide, and Brazil bears one of the largest burdens. The 2024 season was without precedent in the national record --- a peak of 440{,}538 weekly cases and an annual total of 6.67 million, roughly four times the next-largest year. Against this backdrop, the Infodengue--Mosqlimate Dengue Challenge (IMDC) invites teams to produce weekly, state-level probabilistic forecasts, following the precedent of the inaugural 2024 edition~\cite{araujo2026}. Probabilistic forecasts --- a full predictive distribution rather than a point estimate --- are what public-health preparedness actually requires, yet the relative merits of statistical, machine-learning (ML), deep-learning (DL), and mechanistic approaches for this task remain contested, especially under the regime shifts an outbreak year represents.
+
+We address this with a controlled comparison. All models are evaluated on the same four official retrospective seasons (2022--23 through 2025--26) for the 26 mandatory states, through a single backtesting harness that enforces leakage safety and scores every forecast with the weighted interval score (WIS). We ask three questions: (i) which model families forecast best, and how robustly across seasons; (ii) how the answer depends on the evaluation metric; and (iii) whether combining models helps.
+
+\section{Results}
+
+\subsection{No single model dominates across seasons}
+Figure~\ref{fig:byfold} shows mean WIS by model and season on a log scale. The four backtest seasons differ by an order of magnitude in difficulty; the 2024 outlier season (fold 2) is by far the hardest for every model. Crucially, the ranking of models \emph{changes} across seasons. The deep network (GRU) is the single best model in the two ``normal'' seasons (folds 1 and 3) but is the \emph{worst} of all models --- worse even than a naive baseline --- on the 2024 outlier, which it massively under-predicts because the surge lies outside its training distribution and its parametric intervals are too narrow to cover it. The semi-mechanistic trajectory model, by contrast, is essentially tied for best on the outlier season (WIS 3354 vs.\ 3348 for the gradient-boosted model) because its bootstrap-of-historical-seasons construction yields wide, well-calibrated intervals precisely when they are needed.
+
+\subsection{An ensemble is the most robust model}
+Because different models win different seasons, an unweighted quantile-median ensemble (``Vincentization'') of the climatological, gradient-boosted, and deep-learning models achieves the best overall WIS (Table~\ref{tab:leaderboard}, 1288) and, more importantly, never suffers the catastrophic single-season failures of its members. It is the recommended submission model for dengue. For chikungunya, however, the gradient-boosted model \emph{alone} is best (WIS 81.2 vs.\ 91.3 for the ensemble): it dominates every season, so blending it with weaker models only dilutes it. The best model is thus disease-specific.
+
+\begin{table}[t]
+\centering\small
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+\textbf{Model} & \textbf{WIS} & \multicolumn{4}{c}{\textbf{Coverage (\%)}} \\
+\cmidrule(l){3-6}
+& & 50 & 80 & 90 & 95 \\
+\midrule
+Ensemble (Vincent.) & \textbf{1288} & 45 & 75 & 84 & 87 \\
+Ensemble (inv-WIS) & 1291 & 47 & 77 & 85 & 89 \\
+Mechanistic & 1296 & 53 & 78 & 85 & 89 \\
+LightGBM & 1309 & 49 & 80 & 89 & 93 \\
+Climatological & 1327 & 48 & 73 & 82 & 85 \\
+GRU & 1373 & 32 & 57 & 68 & 75 \\
+Seasonal-naive & 1459 & 45 & 80 & 88 & 92 \\
+Naive & 1664 & 40 & 72 & 80 & 86 \\
+\bottomrule
+\end{tabular}
+\caption{Overall dengue backtest, averaged over four seasons and 26 states. WIS lower is better; coverage closer to nominal (50/80/90/95) is better.}
+\label{tab:leaderboard}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{../results/figures/paper_wis_by_fold.png}
+\caption{Mean WIS by model and season (log scale). Model rankings reorder across seasons; the ensemble avoids every model's worst-season failure.}
+\label{fig:byfold}
+\end{figure}
+
+\subsection{The winner depends on the metric}
+The overall mean WIS is dominated by the largest states and the outlier season. Under a scale-free relative-WIS metric that weights every state--season--horizon equally (Figure~\ref{fig:relwis}), the ordering changes markedly: the deep network becomes the best single model (0.38 vs.\ naive), while the mechanistic model --- best under magnitude-weighted mean WIS --- becomes the weakest of the strong models (0.55). This disagreement is not a paradox but a direct consequence of extreme cross-state skew: a metric that rewards accuracy on a handful of very large states favors different models than one that rewards accuracy on the many small ones. We therefore report both, and caution that epidemic-forecasting leaderboards reporting a single aggregate can mislead.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{../results/figures/paper_relative_wis.png}
+\caption{Scale-free relative WIS on the headline seasons (folds 2--3). Compare to Table~\ref{tab:leaderboard}: the single-model ranking reorders entirely versus magnitude-weighted mean WIS.}
+\label{fig:relwis}
+\end{figure}
+
+\subsection{Calibration}
+Raw gradient-boosted and deep-learning quantile models are over-confident (Figure~\ref{fig:coverage}); the GRU covers only 32\% of outcomes in its nominal-50\% interval. Conformalized quantile regression restores the gradient-boosted model to near-nominal calibration at negligible WIS cost, but the same correction \emph{harms} the deep network's WIS on the seasons where it is already sharp --- so calibration and sharpness trade off, and the ensemble's quantile averaging provides a structural, cost-free calibration improvement.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.82\columnwidth]{../results/figures/paper_coverage.png}
+\caption{Interval calibration: empirical vs.\ nominal coverage. Points on the diagonal are perfectly calibrated.}
+\label{fig:coverage}
+\end{figure}
+
+\subsection{A cautionary result on tuning}
+A hyperparameter search that improved the gradient-boosted model by 5\% on an internal time-block holdout \emph{worsened} its true backtest WIS (1317 vs.\ 1309), because the internal holdout does not represent forecasting a full future season from mid-year. Conservative defaults, chosen a priori, generalized better --- a concrete instance of the over-tuning risk endemic to small-sample forecasting.
+
+\section{Discussion}
+Three findings have general implications for epidemic forecasting. First, model rankings are season-dependent and, in an outbreak year, can invert entirely; a model that is best on average may be dangerous exactly when forecasts matter most, arguing for ensembles or for models whose uncertainty widens appropriately under distribution shift (as the mechanistic model's does). Second, the ``best'' model depends on the evaluation metric in a way driven by real epidemiological heterogeneity, so reporting both magnitude- and unit-weighted skill is not optional. Third, in this small-sample, few-series regime, deep learning did not dominate and simple methods --- a climatological quantile model, a bootstrap of historical seasons --- were hard to beat, consistent with broader forecasting-competition evidence.
+
+Limitations include a partially-resolved fourth backtest season (the 2025--26 season is incomplete in the available data and is reported separately), a two-disease single-country scope, and municipality-to-state aggregation that discards sub-state epidemic asynchrony. Future work will add the mechanistic model's per-season Richards parameters as covariates and pursue municipal-level feature engineering for the optional city tracks.
+
+\section{Materials and Methods}
+\textbf{Data and targets.} Weekly case counts per municipality (2010--2026, Infodengue/SINAN), aggregated to 26 states (excluding Esp\'irito Santo per the challenge), with climate reanalysis and forecasts, ocean-oscillation indices, population, and static climate-zone covariates. The four official backtest seasons are derived at runtime from the challenge's train/target flags; a confirmed 15-week gap between each training cutoff and its evaluation window is handled by explicit date-cutoff filtering, guarded by automated tests.
+
+\textbf{Scoring.} The weighted interval score, WIS$(F,y)=\frac{1}{K+1/2}[\frac12|y-m|+\sum_k\frac{\alpha_k}{2}\mathrm{IS}_{\alpha_k}]$ over the four required central intervals, implemented as mean pinball loss over the nine required quantiles (the exact CRPS-approximation identity) and verified against the platform's own scorer. We also report empirical coverage, a decomposition of WIS into sharpness and directional penalties, and scale-free relative WIS.
+
+\textbf{Models.} Baselines (naive, seasonal-naive, climatological-quantile); LightGBM quantile regression on a synthetic-origin panel of lagged, seasonal, climate and static features with conformalized intervals; a global GRU with per-state embeddings and a negative-binomial head trained as a deep ensemble; and a semi-mechanistic model that bootstraps historical season trajectories (a local reimplementation of Richards-curve epidemic-scanner fits) under a negative-binomial observation model. Ensembles combine models by per-quantile median or inverse-WIS weights tuned only on a held-out season.
+
+\textbf{Reproducibility.} All code, the backtesting harness, per-state scored predictions, and validated submission files for four challenge tracks (dengue and chikungunya, state and city level) are released, with 62 automated tests covering leakage, scoring correctness, and every model.
+
+\begin{thebibliography}{1}
+\small
+\bibitem{araujo2026} Araujo EC, Carvalho LM, Coelho FC, et al. Leveraging probabilistic forecasts for dengue preparedness and control: The 2024 Dengue Forecasting Sprint in Brazil. \emph{PNAS} 123(7):e2508989123 (2026).
+\end{thebibliography}
+
+\end{document}
