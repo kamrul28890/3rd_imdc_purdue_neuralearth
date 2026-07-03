@@ -25,3 +25,6 @@ submissions/*/*.json
 # local working notes (not for the public repo)
 email-communication.md
 prediction_upload.md
+
+# run logs (not results)
+results/metrics/*.log
