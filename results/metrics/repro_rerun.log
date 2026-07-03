@@ -1,0 +1,69 @@
+LGBM backtest: 4654 scored rows in 494.3s
+
+=== Combined leaderboard (mean over all states/folds/horizons) ===
+                  model         wis  dispersion  overprediction  underprediction   ae_median  coverage_50  coverage_80  coverage_90  coverage_95
+          lgbm_quantile 1311.282443  308.260684       23.699282       979.322476 1717.579927     0.490331     0.799527     0.878169     0.923077
+climatological_quantile 1326.907212  342.013907        2.016361       982.876943 1859.175333     0.476150     0.734207     0.821014     0.849592
+         seasonal_naive 1458.609264  319.343904       10.260769      1129.004592 1855.503116     0.448861     0.799098     0.882467     0.924581
+                  naive 1664.042911  423.470809      226.018935      1014.553168 2217.569832     0.401805     0.720670     0.804684     0.858616
+
+=== By fold ===
+                  model  fold_id         wis  dispersion  overprediction  underprediction   ae_median  coverage_50  coverage_80  coverage_90  coverage_95
+          lgbm_quantile        1  360.549586  209.603452        4.387310       146.558824  673.298511     0.532544     0.870562     0.935651     0.981509
+climatological_quantile        1  386.166212  202.318279        2.217271       181.630662  795.244453     0.473373     0.737426     0.801775     0.838757
+         seasonal_naive        1  500.390822  183.392754        8.971113       308.026956  787.769970     0.420858     0.825444     0.911982     0.949704
+                  naive        1  726.145355  284.163776      135.926122       306.055457 1220.073964     0.281065     0.613166     0.750000     0.812130
+          lgbm_quantile        2 3356.906529  589.168497        3.498521      2764.239511 4088.142189     0.435651     0.669379     0.735207     0.782544
+climatological_quantile        2 3588.265165  625.876272        0.850551      2961.538342 4559.321006     0.400888     0.593935     0.673817     0.703402
+                  naive        2 3833.445752  663.241528       45.467743      3124.736481 4624.999630     0.372041     0.670858     0.740385     0.816568
+         seasonal_naive        2 3847.963012  605.829880        2.351397      3239.781735 4547.705251     0.417160     0.696006     0.775148     0.829882
+climatological_quantile        3  516.125436  282.790538        2.560729       230.774170  940.596524     0.517751     0.815089     0.933432     0.958580
+         seasonal_naive        3  581.457471  236.473176       11.219527       333.764768  937.123151     0.455621     0.840976     0.936391     0.974852
+          lgbm_quantile        3  644.366191  185.242456        1.223980       457.899756  911.679353     0.491124     0.850592     0.943787     0.986686
+                  naive        3 1055.719662  404.497461      593.361978        57.860224 1667.143121     0.384615     0.781805     0.843195     0.889053
+climatological_quantile        4  174.236373  149.968034        2.967131        21.301208  236.693980     0.558528     0.861204     0.943144     0.958194
+         seasonal_naive        4  206.124803  166.364202       28.890942        10.869658  259.127926     0.568562     0.877926     0.936455     0.968227
+                  naive        4  255.109615  239.231782        7.395020         8.482813  274.336120     0.780936     0.938127     0.986622     0.989967
+          lgbm_quantile        4  343.686841  174.344061      163.846148         5.496632  541.068009     0.516722     0.817726     0.923077     0.964883
+Inverse-WIS weights (tuned on fold 1): {'climatological_quantile': 0.312, 'lgbm_quantile': 0.334, 'gru_negbin': 0.355}
+
+=== Final leaderboard (overall mean WIS) ===
+                  model         wis  coverage_50  coverage_80  coverage_90  coverage_95
+       ensemble_vincent 1289.236180     0.450795     0.752686     0.838633     0.872368
+        ensemble_invwis 1292.901508     0.467340     0.768801     0.846154     0.891061
+       mechanistic_traj 1296.209779     0.529222     0.782982     0.850236     0.889128
+          lgbm_quantile 1311.282443     0.490331     0.799527     0.878169     0.923077
+climatological_quantile 1326.907212     0.476150     0.734207     0.821014     0.849592
+             gru_negbin 1372.950646     0.323807     0.567254     0.677482     0.748818
+         seasonal_naive 1458.609264     0.448861     0.799098     0.882467     0.924581
+                  naive 1664.042911     0.401805     0.720670     0.804684     0.858616
+
+=== WIS by fold ===
+fold_id                      1       2       3      4
+model                                                
+climatological_quantile  386.0  3588.0   516.0  174.0
+ensemble_invwis          330.0  3614.0   419.0  199.0
+ensemble_vincent         344.0  3594.0   428.0  162.0
+gru_negbin               339.0  3955.0   354.0  176.0
+lgbm_quantile            361.0  3357.0   644.0  344.0
+mechanistic_traj         474.0  3354.0   545.0  198.0
+naive                    726.0  3833.0  1056.0  255.0
+seasonal_naive           500.0  3848.0   581.0  206.0
+
+=== Weight-tuning robustness (invWIS weights by tuning fold) ===
+  tune on fold 1: {climatological:0.31, lgbm:0.33, gru:0.35}
+  tune on fold 2: {climatological:0.34, lgbm:0.36, gru:0.30}
+  tune on fold 3: {climatological:0.31, lgbm:0.25, gru:0.45}
+/Users/scarecrow/mosqlimate/src/imdc/submission/generate.py:23: DtypeWarning: Columns (1,6) have mixed types. Specify dtype option on import or set low_memory=False.
+  scored = pd.read_csv(METRICS_DIR / scored_file, parse_dates=["date"])
+model=ensemble_vincent disease=dengue: 78 valid, 26 failed
+  FAIL: dengue/2026/AC: 270 non-finite / missing prediction values
+  FAIL: dengue/2026/AL: 270 non-finite / missing prediction values
+  FAIL: dengue/2026/AM: 270 non-finite / missing prediction values
+  FAIL: dengue/2026/AP: 270 non-finite / missing prediction values
+  FAIL: dengue/2026/BA: 270 non-finite / missing prediction values
+  FAIL: dengue/2026/CE: 270 non-finite / missing prediction values
+  FAIL: dengue/2026/DF: 270 non-finite / missing prediction values
+  FAIL: dengue/2026/GO: 270 non-finite / missing prediction values
+  FAIL: dengue/2026/MA: 270 non-finite / missing prediction values
+  FAIL: dengue/2026/MG: 270 non-finite / missing prediction values

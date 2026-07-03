@@ -36,6 +36,12 @@ DEFAULT_PARAMS = {
     "bagging_freq": 1,
     "verbose": -1,
     "n_jobs": -1,
+    # Reproducibility: fixed seeds + deterministic mode make boosting bit-identical
+    # across re-runs on the same platform (force_row_wise removes the row/col-wise
+    # heuristic's thread-count dependence).
+    "seed": 42,
+    "deterministic": True,
+    "force_row_wise": True,
 }
 DEFAULT_N_ESTIMATORS = 400
 

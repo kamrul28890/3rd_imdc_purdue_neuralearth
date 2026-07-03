@@ -1,0 +1,45 @@
+                  model        wis
+          lgbm_quantile  82.308720
+       ensemble_vincent  91.563700
+climatological_quantile  94.449612
+         seasonal_naive  97.779984
+       mechanistic_traj 101.000683
+                  naive 123.111448
+
+dengue cities (15):
+                  model        wis
+climatological_quantile 128.709928
+         seasonal_naive 138.058396
+                  naive 141.227069
+
+chikungunya cities (10):
+                  model       wis
+climatological_quantile 32.231024
+         seasonal_naive 32.448288
+                  naive 36.233842
+/Users/scarecrow/mosqlimate/src/imdc/submission/generate.py:23: DtypeWarning: Columns (1,6) have mixed types. Specify dtype option on import or set low_memory=False.
+  scored = pd.read_csv(METRICS_DIR / scored_file, parse_dates=["date"])
+model=ensemble_vincent disease=dengue: 78 valid, 26 failed
+  FAIL: dengue/2026/AC: 270 non-finite / missing prediction values
+  FAIL: dengue/2026/AL: 270 non-finite / missing prediction values
+  FAIL: dengue/2026/AM: 270 non-finite / missing prediction values
+  FAIL: dengue/2026/AP: 270 non-finite / missing prediction values
+  FAIL: dengue/2026/BA: 270 non-finite / missing prediction values
+  FAIL: dengue/2026/CE: 270 non-finite / missing prediction values
+  FAIL: dengue/2026/DF: 270 non-finite / missing prediction values
+  FAIL: dengue/2026/GO: 270 non-finite / missing prediction values
+  FAIL: dengue/2026/MA: 270 non-finite / missing prediction values
+  FAIL: dengue/2026/MG: 270 non-finite / missing prediction values
+model=lgbm_quantile disease=chikungunya: 78 valid, 26 failed
+  FAIL: chikungunya/2026/AC: 270 non-finite / missing prediction values
+  FAIL: chikungunya/2026/AL: 270 non-finite / missing prediction values
+  FAIL: chikungunya/2026/AM: 270 non-finite / missing prediction values
+  FAIL: chikungunya/2026/AP: 270 non-finite / missing prediction values
+  FAIL: chikungunya/2026/BA: 270 non-finite / missing prediction values
+  FAIL: chikungunya/2026/CE: 270 non-finite / missing prediction values
+  FAIL: chikungunya/2026/DF: 270 non-finite / missing prediction values
+  FAIL: chikungunya/2026/GO: 270 non-finite / missing prediction values
+  FAIL: chikungunya/2026/MA: 270 non-finite / missing prediction values
+  FAIL: chikungunya/2026/MG: 270 non-finite / missing prediction values
+dengue cities: 45 valid, 15 failed
+chikungunya cities: 30 valid, 10 failed

@@ -118,6 +118,31 @@ python -m imdc.models.run_ensemble         # instant (reads saved predictions)
 **You do not need to re-run these to continue.** Every model's scored predictions are
 already committed in `results/metrics/*_scored.csv`; Phases 7–8 build directly on them.
 
+## Reproducibility
+
+The whole pipeline regenerates from raw data with one command:
+
+```bash
+make reproduce        # all models -> ensemble -> optional tracks -> submissions -> figures -> manifest
+make reproduce-fast   # same but reuse the committed GRU predictions (skip the ~55-min GRU)
+make test             # 64-test suite, incl. determinism guards
+```
+
+Five reproducibility guarantees:
+1. **Determinism** — baselines, LightGBM (`seed=42, deterministic=True`), and the mechanistic
+   model (seeded RNG) reproduce **bit-for-bit**; `tests/test_determinism.py` enforces this. The
+   GRU is seeded but only bit-reproducible on CPU (Apple-MPS float ops are non-deterministic);
+   the committed `gru_scored.csv` is the canonical DL result.
+2. **One command** — the `Makefile` runs every step in dependency order; each result has a
+   script (no inline notebook-only code produces a committed number).
+3. **Provenance** — `scripts/make_manifest.py` writes `RESULTS.md` with the git commit, a
+   SHA-256 fingerprint of the raw inputs (`data/raw/data_imdc_2026/CHECKSUMS.sha256`), and the
+   current leaderboards, so every number is tied to an exact data + code version.
+4. **Pinned environment** — `environment.lock.yml` is a full `conda env export` (exact versions);
+   `environment.yml` is the minimal portable spec.
+5. **Committed outputs** — `results/metrics/*.csv` are the canonical results the paper/figures
+   read from, decoupled from re-computation.
+
 ## Two things to know
 
 - **Model weights are NOT persisted.** Each backtest retrains from scratch; `models/`
