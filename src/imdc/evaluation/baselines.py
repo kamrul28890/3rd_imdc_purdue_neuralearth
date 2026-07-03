@@ -133,9 +133,16 @@ class ClimatologicalQuantileModel:
             samples = self._pooled.get(uf, {}).get(w, np.array([0.0]))
             values = np.maximum(0.0, np.quantile(samples, quantile_levels))
             if self.point_estimate == "mean":
-                # clamped into [lower_50, upper_50] so nesting is preserved; non-zero in peak
-                # weeks and varying across seasons since the pooled history differs per cutoff.
-                values[i50] = float(np.clip(np.mean(samples), values[i25], values[i75]))
+                # Point forecast = predictive mean, then an isotonic projection keeping pred at
+                # the median slot: push upper quantiles up and lower quantiles down so the vector
+                # stays monotone. Unlike a clamp to [q25,q75], this also gives a non-zero, season-
+                # varying pred for ultra-sparse series whose q75 is itself 0.
+                values[i50] = float(np.mean(samples))
+                for j in range(i50 + 1, len(values)):
+                    values[j] = max(values[j], values[j - 1])
+                for j in range(i50 - 1, -1, -1):
+                    values[j] = min(values[j], values[j + 1])
+                values = np.maximum(0.0, values)
             for tau, v in zip(quantile_levels, values):
                 rows.append({"uf": uf, "date": date, "quantile_level": tau, "predicted_value": v})
         return pd.DataFrame(rows)
