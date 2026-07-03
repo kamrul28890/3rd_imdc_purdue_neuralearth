@@ -4,10 +4,12 @@ Documentation required by the IMDC rules for the model repository. See `README.m
 for setup/reproduction and `reports/` + `paper/` for the full methodology and results.
 
 ## Team and contributors
-- **Team:** *(fill in team name — used in the repo name `3rd_imdc_{institution}_{team}`)*
-- **Institution:** *(fill in)*
-- **Contributors:** *(names / roles)*
-- **Contact:** kamrul28890 (Mosqlimate platform account)
+- **Team:** Neural Earth
+- **Members:**
+  - Abdullah Al Helal — Oklahoma State University
+  - Md Kamruzzaman Kamrul — Purdue University (team leader)
+  - Eashraque Jahan Easha — University of Denver
+- **Contact:** kamrul28890@gmail.com (Mosqlimate platform account: `kamrul28890`)
 
 ## Repository structure
 - `src/imdc/` — installable pipeline: data loading/folds/leakage guards, features, evaluation

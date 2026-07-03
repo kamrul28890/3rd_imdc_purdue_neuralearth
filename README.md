@@ -1,10 +1,17 @@
-# IMDC 2026 — Dengue Forecasting Pipeline
+# IMDC 2026 — Team Neural Earth
 
 Forecasting pipeline for the **3rd Infodengue–Mosqlimate Dengue Challenge (IMDC 2026)**:
-weekly probabilistic dengue forecasts at the state level for 26 Brazilian states,
+weekly probabilistic dengue (and chikungunya) forecasts for Brazilian states and cities,
 with the end goal of a competitive submission and a PNAS-style journal paper.
 
-This README is the entry point for **resuming work on another machine** — it records
+**Team Neural Earth**
+- Abdullah Al Helal — Oklahoma State University
+- Md Kamruzzaman Kamrul — Purdue University (team leader)
+- Eashraque Jahan Easha — University of Denver
+
+Contact: kamrul28890@gmail.com · Platform account: `kamrul28890`
+
+This README is also the entry point for **resuming work on another machine** — it records
 what is done, where everything lives, how to set up the environment, and how to
 pick up from here.
 
@@ -84,8 +91,8 @@ docs/PLAN.md                  # the full phase 2–8 implementation plan
 ### 1. Clone (with LFS — the raw data is ~800 MB via Git LFS)
 ```bash
 git lfs install
-git clone https://github.com/kamrul28890/mosqlimate-imdc-2026.git
-cd mosqlimate-imdc-2026
+git clone https://github.com/kamrul28890/3rd_imdc_purdue_neuralearth.git
+cd 3rd_imdc_purdue_neuralearth
 git lfs pull        # fetches data/raw/data_imdc_2026/ (climate.csv.gz is 459 MB)
 ```
 
