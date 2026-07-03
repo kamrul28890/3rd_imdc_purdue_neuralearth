@@ -33,12 +33,22 @@ from imdc.data.loaders import load_cases
 from imdc.data.validate import assert_no_leakage
 from imdc.features.panel import INCIDENCE_SCALE, state_population
 
-SEASON_LEN = 52
+SEASON_LEN = 53  # allow for 53-week epi years (e.g. 2026); 52-week seasons leave index 52 empty
 
 
-def season_week(epiweek: int) -> int:
-    """Map an epidemiological week to its within-season index (EW41 -> 1 ... EW40 -> 52)."""
-    return epiweek - 40 if epiweek >= 41 else epiweek + 12
+def season_week_from_date(date) -> int:
+    """Within-season index (EW41 -> 1) derived from the date, so 53-week years don't collide.
+
+    A pure epiweek->index map is not correct: in a 53-week epi year both EW53 and the next
+    year's EW1 map to the same index, colliding within one season. Computing the index from
+    weeks-since-season-start (EW41 of the season's first year) is injective and handles both
+    52- and 53-week seasons.
+    """
+    date = pd.Timestamp(date)
+    ew = Week.fromdate(date)
+    start_year = ew.year if ew.week >= 41 else ew.year - 1
+    season_start = pd.Timestamp(Week(start_year, 41).startdate())
+    return (date - season_start).days // 7 + 1
 
 
 def _season_start_year(date: pd.Timestamp) -> int:
@@ -97,9 +107,8 @@ class MechanisticTrajectoryModel:
         df["pop_year"] = df["year"].clip(ymin, ymax)
         df = df.merge(pop.rename(columns={"year": "pop_year"}), on=["uf", "pop_year"], how="left")
         df["incidence"] = df["casos"] / df["population"] * INCIDENCE_SCALE
-        df["epiweek_num"] = [Week.fromdate(d).week for d in df["date"]]
         df["season_start_year"] = [_season_start_year(d) for d in df["date"]]
-        df["season_week"] = df["epiweek_num"].apply(season_week)
+        df["season_week"] = [season_week_from_date(d) for d in df["date"]]
         return df
 
     def fit(self, train_df, fold, covariates=None):
@@ -151,8 +160,7 @@ class MechanisticTrajectoryModel:
         rows = []
         grid = target_grid.copy()
         grid["date"] = pd.to_datetime(grid["date"])
-        grid["epiweek_num"] = [Week.fromdate(d).week for d in grid["date"]]
-        grid["season_week"] = grid["epiweek_num"].apply(season_week)
+        grid["season_week"] = [season_week_from_date(d) for d in grid["date"]]
 
         for uf, gg in grid.groupby("uf"):
             traj = self._trajectories.get(uf)

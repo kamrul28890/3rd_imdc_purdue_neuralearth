@@ -103,8 +103,21 @@ def score_backtest(predictions_long: pd.DataFrame, disease: str = "dengue", fold
     return scored
 
 
-def summarize(scored: pd.DataFrame, by: list) -> pd.DataFrame:
-    """Aggregate scored predictions (mean WIS/coverage/etc.) by arbitrary grouping columns."""
+# Folds whose target season is not fully resolved in the data (prospective/partial).
+# Fold 4 (2025-26) only has data through ~2026-03; averaging it into a headline number
+# mixes a partial season with complete ones. Headline/paper aggregations should pass
+# `exclude_folds=PROSPECTIVE_FOLDS`; per-fold tables keep it to show fold 4 separately.
+PROSPECTIVE_FOLDS = (4,)
+
+
+def summarize(scored: pd.DataFrame, by: list, exclude_folds: tuple = ()) -> pd.DataFrame:
+    """Aggregate scored predictions (mean WIS/coverage/etc.) by arbitrary grouping columns.
+
+    `exclude_folds` drops those fold_ids before aggregating (e.g. the prospective fold 4
+    for a headline number). Default keeps every fold, so existing callers are unchanged.
+    """
+    if exclude_folds:
+        scored = scored[~scored["fold_id"].isin(exclude_folds)]
     metric_cols = [
         "wis", "dispersion", "overprediction", "underprediction", "ae_median",
         "coverage_50", "coverage_80", "coverage_90", "coverage_95",

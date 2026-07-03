@@ -11,17 +11,21 @@ from imdc.config import QUANTILE_COLUMNS
 from imdc.data.folds import get_folds
 from imdc.evaluation.harness import run_backtest, score_backtest
 from imdc.evaluation.postprocess import enforce_monotonicity
-from imdc.models.mechanistic import MechanisticTrajectoryModel, fit_richards, richards_cumulative, season_week
+from imdc.models.mechanistic import MechanisticTrajectoryModel, fit_richards, richards_cumulative, season_week_from_date
 
 SMALL_UFS = ["SP", "RJ", "AC"]
 
 
-def test_season_week_mapping():
-    # EW41 starts a season (week 1); EW52 -> 12; EW1 -> 13; EW40 -> 52
-    assert season_week(41) == 1
-    assert season_week(52) == 12
-    assert season_week(1) == 13
-    assert season_week(40) == 52
+def test_season_week_mapping_is_injective_incl_ew53():
+    from epiweeks import Week
+    # EW41 of a season -> week 1; EW40 of the next year -> the season's last week.
+    assert season_week_from_date(Week(2022, 41).startdate()) == 1
+    assert season_week_from_date(Week(2023, 40).startdate()) == 52  # 2022-23 is a 52-week season
+    # 2025 is a 53-week epi year, so the 2025-26 season contains EW53 2025: it and the
+    # following EW1 2026 must NOT collide (the old epiweek-based map put both at index 13).
+    sw_ew53 = season_week_from_date(Week(2025, 53).startdate())
+    sw_ew1 = season_week_from_date(Week(2026, 1).startdate())
+    assert sw_ew53 == 13 and sw_ew1 == 14 and sw_ew53 != sw_ew1
 
 
 def test_richards_fit_recovers_synthetic_curve():

@@ -32,6 +32,7 @@ from imdc.data.loaders import (
     load_cases,
     load_climate,
     load_environ_vars,
+    load_forecasting_climate,
     load_ocean_indices,
     load_population,
 )
@@ -41,6 +42,7 @@ INCIDENCE_SCALE = 1e5
 MAX_HORIZON = 67  # 15-week gap + 52-week season
 _LAGS = [1, 2, 3, 4, 8, 52]
 _OCEAN_LAGS = [0, 4, 8, 12, 26, 52]
+ECMWF_COLS = ["ecmwf_temp", "ecmwf_humid", "ecmwf_precip"]
 
 
 # --------------------------------------------------------------------------
@@ -80,6 +82,50 @@ def state_climate_full() -> pd.DataFrame:
         return population_weighted_state_climate(climate, pop, geo_uf)
 
     return _cached("state_climate_full", build)
+
+
+def state_ecmwf_full() -> pd.DataFrame:
+    """Population-weighted state ECMWF seasonal-climate forecast, indexed by (uf,
+    reference_month, target_month). The genuine *future* climate covariate: a forecast
+    issued at `reference_month` for `target_month = reference_month + months_ahead` (<=6).
+    """
+    def build():
+        fc = load_forecasting_climate()
+        geo_uf = load_cases("dengue")[["geocode", "uf"]].drop_duplicates()
+        pop24 = load_population()
+        pop24 = pop24[pop24["year"] == 2024][["geocode", "population"]]
+        fc = fc.merge(geo_uf, on="geocode", how="inner").merge(pop24, on="geocode", how="left")
+        fc["population"] = fc["population"].fillna(0.0)
+        cols = ["temp_med", "umid_med", "precip_tot"]
+        for c in cols:
+            fc[c] = fc[c] * fc["population"]
+        g = fc.groupby(["uf", "reference_month", "forecast_months_ahead"], as_index=False)[cols + ["population"]].sum()
+        for c in cols:
+            g[c] = g[c] / g["population"].replace(0, np.nan)
+        g = g.drop(columns="population")
+        g["target_month"] = [rm + pd.DateOffset(months=int(a))
+                             for rm, a in zip(g["reference_month"], g["forecast_months_ahead"])]
+        return g.rename(columns={"temp_med": "ecmwf_temp", "umid_med": "ecmwf_humid",
+                                 "precip_tot": "ecmwf_precip"})[
+            ["uf", "reference_month", "target_month"] + ECMWF_COLS]
+
+    return _cached("state_ecmwf_full", build)
+
+
+def _attach_ecmwf(feats: pd.DataFrame) -> pd.DataFrame:
+    """Leakage-safe ECMWF features: the latest forecast issued at reference_month <= origin_month
+    for each row's target month. Rows whose target is >6 months past any valid origin get NaN
+    (handled natively by LightGBM)."""
+    ecmwf = state_ecmwf_full().sort_values("reference_month")
+    f = feats.copy()
+    f["origin_month"] = pd.to_datetime(f["origin_date"]).values.astype("datetime64[M]").astype("datetime64[ns]")
+    f["target_month"] = pd.to_datetime(f["target_date"]).values.astype("datetime64[M]").astype("datetime64[ns]")
+    f = f.sort_values("origin_month")
+    merged = pd.merge_asof(
+        f, ecmwf, left_on="origin_month", right_on="reference_month",
+        by=["uf", "target_month"], direction="backward",
+    )
+    return merged.drop(columns=["origin_month", "target_month", "reference_month"], errors="ignore")
 
 
 def state_static_features() -> pd.DataFrame:
@@ -226,6 +272,7 @@ FEATURE_COLS = (
     + ["temp_med_roll4", "precip_med_roll4", "rel_humid_med_roll4", "temp_anomaly"]
     + [f"{i}_lag{l}" for i in ["enso", "iod", "pdo"] for l in _OCEAN_LAGS]
     + ["horizon_weeks", "target_epiweek", "sin1", "cos1", "sin2", "cos2", "seasonal_anchor", "log_pop"]
+    + ECMWF_COLS
 )
 
 
@@ -265,6 +312,7 @@ def build_panel(fold: Fold, disease: str = "dengue", ufs: list = MANDATORY_UFS,
 
     feats = _assemble_rows(origin_df, pairs, anchor_lookup, with_label=True)
     feats, static_cols = _attach_static(feats, pop)
+    feats = _attach_ecmwf(feats)
     feats = feats.dropna(subset=["label"])
     return feats, FEATURE_COLS + static_cols
 
@@ -281,4 +329,5 @@ def build_prediction_features(fold: Fold, target_grid: pd.DataFrame, disease: st
 
     feats = _assemble_rows(origin_df, pairs, anchor_lookup, with_label=False)
     feats, static_cols = _attach_static(feats, pop)
+    feats = _attach_ecmwf(feats)
     return feats, FEATURE_COLS + static_cols

@@ -13,11 +13,16 @@ The gaps below are the difference between "works and won a deadline" and "a main
 research platform we can extend for the September forecast and the paper."
 
 **Top 5 things to fix first (highest value / lowest effort):**
-1. Cache the data loaders — one line each, ~3–5× faster everywhere (§2.1).
-2. Fix the EW53 season-week collision — a real latent bug (§1.1).
-3. Handle all-zero-median forecasts — caused the 15 stuck chik-city uploads (§1.2).
-4. Persist trained models — the missing weights made fold-4 a 15-min refit (§2.4).
+1. ~~Cache the data loaders~~ — **DONE** (§2.1): 25× faster cached loads, mutation-safe.
+2. ~~Fix the EW53 season-week collision~~ — **DONE** (§1.1): date-based `season_week_from_date`.
+3. ~~Handle all-zero-median forecasts~~ — **DONE** (§1.2): mean point-estimate for degenerate series.
+4. ~~Persist trained models~~ — **DONE** (§2.4): `models/persistence.py` save/load (torch CPU-safe).
 5. Define a formal `Forecaster` protocol — removes duck-typing and dead params (§3.1).
+
+**Also since implemented:** §1.3 fold-4 flagging (`summarize(exclude_folds=…)`), and §5.1 **ECMWF
+seasonal-climate features** — improved LightGBM 1311→1299 and the ensemble to **1280.7** WIS.
+Remaining high-value items: §3.1 protocol, §3.2 dedup, §3.3 CLI, §4.1 fast tests, §5.2 hierarchical
+reconciliation, §5.3 stacking.
 
 ---
 
