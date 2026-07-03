@@ -76,6 +76,49 @@ def upload_season(repository: str, disease: str, season: int, description: str,
     return results
 
 
+# Track config: subdir under submissions/validation, disease, adm_level, and how to map a
+# geography key to the adm_1 (state) or adm_2 (municipality geocode) argument.
+TRACKS = {
+    "dengue_state": {"subdir": "dengue", "disease": "dengue", "adm_level": 1},
+    "chikungunya_state": {"subdir": "chikungunya", "disease": "chikungunya", "adm_level": 1},
+    "dengue_cities": {"subdir": "dengue_cities", "disease": "dengue", "adm_level": 2},
+    "chikungunya_cities": {"subdir": "chikungunya_cities", "disease": "chikungunya", "adm_level": 2},
+}
+
+
+def upload_track(repository: str, track: str, dry_run: bool = True, require_clean: bool = True) -> dict:
+    """Validate/upload every geography and season for one track. Returns {geography_season: status}."""
+    from mosqlient import upload_prediction
+    from mosqlient.registry.models import Prediction
+
+    cfg = TRACKS[track]
+    key = _load_key()
+    commit = git_commit_hash(require_clean=require_clean)
+    disease_code = DISEASE_CODE[cfg["disease"]]
+    track_dir = SUBMISSIONS_DIR / "validation" / cfg["subdir"]
+
+    results = {}
+    for season in FOLD_SEASON.values():
+        season_dir = track_dir / f"season_{season}"
+        if not season_dir.exists():
+            continue
+        for path in sorted(season_dir.glob("*.csv")):
+            geo = path.stem  # "SP" for states, "3550308" (geocode) for cities
+            frame = pd.read_csv(path, parse_dates=["date"])
+            adm_kwargs = {"adm_1": UF_TO_ADM1[geo]} if cfg["adm_level"] == 1 else {"adm_2": int(geo)}
+            try:
+                validate_submission(frame, season, name=f"{track}/{season}/{geo}")
+                fn = Prediction.validate_prediction if dry_run else upload_prediction
+                fn(api_key=key, repository=repository, disease=disease_code,
+                   description=f"IMDC 2026 {track} season {season}", commit=commit, prediction=frame,
+                   adm_level=cfg["adm_level"], **adm_kwargs)
+                results[f"{geo}_{season}"] = "ok"
+            except Exception as e:
+                msg = repr(e)[:100]
+                results[f"{geo}_{season}"] = "ok (already uploaded)" if "Duplication" in msg else f"error: {msg}"
+    return results
+
+
 if __name__ == "__main__":
     import sys
     repo = sys.argv[1] if len(sys.argv) > 1 else None
