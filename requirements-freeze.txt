@@ -52,7 +52,7 @@ httpcore==1.0.9
 httpx==0.28.1
 huggingface_hub==1.19.0
 idna==3.18
--e git+https://github.com/kamrul28890/mosqlimate-imdc-2026.git@afccb31bd0bf8b30bea4b664a4a30fb62024b469#egg=imdc
+-e git+https://github.com/kamrul28890/3rd_imdc_purdue_neuralearth.git@afccb31bd0bf8b30bea4b664a4a30fb62024b469#egg=imdc
 iniconfig==2.3.0
 ipykernel==7.3.0
 ipython==8.39.0
