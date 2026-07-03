@@ -11,14 +11,21 @@ import pandas as pd
 from imdc.config import METRICS_DIR
 from imdc.models.ensemble import inverse_wis_weights, score_wide, vincentization, weighted_ensemble
 
+# Ensemble members chosen by fold-1 (tuning) performance + scale-free relative-WIS, NOT by
+# overall mean WIS (which is dominated by the outlier fold). The mechanistic model is loaded
+# as a single-model comparison but deliberately excluded from the ensemble: adding it hurts
+# both the fold-1 score and the relative-WIS on the headline folds (it is strong on raw mean
+# only because of the outlier fold's magnitude).
 MEMBERS = ["climatological_quantile", "lgbm_quantile", "gru_negbin"]
 SCORE_COLS = ["wis", "coverage_50", "coverage_80", "coverage_90", "coverage_95"]
 
 
 def _load_all():
     frames = []
-    for f in ["baselines_scored.csv", "lgbm_scored.csv", "gru_scored.csv"]:
-        frames.append(pd.read_csv(METRICS_DIR / f, parse_dates=["date", "origin_date"]))
+    for f in ["baselines_scored.csv", "lgbm_scored.csv", "gru_scored.csv", "mechanistic_scored.csv"]:
+        p = METRICS_DIR / f
+        if p.exists():
+            frames.append(pd.read_csv(p, parse_dates=["date", "origin_date"]))
     return pd.concat(frames, ignore_index=True)
 
 
