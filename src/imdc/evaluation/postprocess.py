@@ -8,7 +8,7 @@ from the canonical long format, by to_submission_wide.
 import numpy as np
 import pandas as pd
 
-from imdc.config import QUANTILE_COLUMNS, QUANTILE_LEVEL_TO_COLUMN
+from imdc.config import INTERVAL_LEVELS, QUANTILE_COLUMNS, QUANTILE_LEVEL_TO_COLUMN
 
 
 def enforce_monotonicity(df: pd.DataFrame, columns: list = QUANTILE_COLUMNS) -> pd.DataFrame:
@@ -28,6 +28,56 @@ def enforce_monotonicity(df: pd.DataFrame, columns: list = QUANTILE_COLUMNS) -> 
     out[columns] = sorted_values
     out.attrs["frac_rows_needing_reordering"] = float(np.mean(needed_reorder))
     return out
+
+
+def conformal_widen_factors(
+    calib: pd.DataFrame, interval_levels: list = INTERVAL_LEVELS, eps: float = 1e-9
+) -> dict:
+    """Per-interval multiplicative widening factors that hit nominal coverage on `calib`.
+
+    A multiplicative analogue of conformalized quantile regression (Romano et al. 2019),
+    robust to the huge cross-state scale differences (SP vs AC) that an additive conformal
+    score handles poorly. For central interval level L with bounds [lower_L, upper_L] and
+    median `pred`, each calibration row's "multiple needed to just cover y" is
+
+        r = (y - pred) / (upper_L - pred)   if y > pred      (upper side)
+            (pred - y) / (pred - lower_L)   if y < pred      (lower side)
+            0                               otherwise
+
+    and the factor s_L is the L/100 empirical quantile of r, so widening the interval about
+    the median by s_L yields ~L% empirical coverage. `calib` needs columns pred, observed_value,
+    and lower_L/upper_L for each level. Factors < 1 (tightening an over-covered interval) are
+    allowed; the median is never touched.
+    """
+    y = calib["observed_value"].to_numpy(dtype=float)
+    p = calib["pred"].to_numpy(dtype=float)
+    hi, lo = y > p, y < p
+    factors = {}
+    for level in interval_levels:
+        upper = calib[f"upper_{level}"].to_numpy(dtype=float)
+        lower = calib[f"lower_{level}"].to_numpy(dtype=float)
+        r = np.zeros(len(y))
+        r[hi] = (y[hi] - p[hi]) / np.maximum(upper[hi] - p[hi], eps)
+        r[lo] = (p[lo] - y[lo]) / np.maximum(p[lo] - lower[lo], eps)
+        factors[level] = float(np.quantile(r, level / 100))
+    return factors
+
+
+def apply_conformal_widen(
+    preds_wide: pd.DataFrame, factors: dict, interval_levels: list = INTERVAL_LEVELS
+) -> pd.DataFrame:
+    """Widen each central interval about the median by its factor; re-nest for monotonicity.
+
+    Point forecast (`pred`) is unchanged. `enforce_monotonicity` repairs any crossing that
+    unequal per-level factors could introduce.
+    """
+    out = preds_wide.copy()
+    p = out["pred"].to_numpy(dtype=float)
+    for level in interval_levels:
+        s = factors[level]
+        out[f"upper_{level}"] = p + s * (out[f"upper_{level}"].to_numpy(dtype=float) - p)
+        out[f"lower_{level}"] = p - s * (p - out[f"lower_{level}"].to_numpy(dtype=float))
+    return enforce_monotonicity(out)
 
 
 def to_submission_wide(

@@ -10,7 +10,12 @@ import pandas as pd
 
 from imdc.config import METRICS_DIR
 from imdc.evaluation.harness import normalized_wis
+from imdc.evaluation.postprocess import apply_conformal_widen, conformal_widen_factors
 from imdc.models.ensemble import inverse_wis_weights, score_wide, vincentization, weighted_ensemble
+
+# Fold used to calibrate ensemble weights AND the conformal recalibration factors (kept out of
+# the headline folds it is reported on, per the tuning-fold discipline).
+CALIB_FOLD = 1
 
 # Ensemble members chosen by fold-1 (tuning) performance + scale-free relative-WIS, NOT by
 # overall mean WIS (which is dominated by the outlier fold). The mechanistic model is loaded
@@ -33,11 +38,21 @@ def _load_all():
 def main():
     allpreds = _load_all()
 
-    vincent = score_wide(vincentization(allpreds, MEMBERS))
-    weights = inverse_wis_weights(allpreds, MEMBERS, tuning_fold=1)
+    vincent_wide = vincentization(allpreds, MEMBERS)
+    vincent = score_wide(vincent_wide)
+    weights = inverse_wis_weights(allpreds, MEMBERS, tuning_fold=CALIB_FOLD)
     invwis = score_wide(weighted_ensemble(allpreds, weights))
 
-    combined = pd.concat([allpreds, vincent, invwis], ignore_index=True)
+    # Conformal recalibration of the ensemble's intervals: factors tuned on the tuning fold and
+    # applied to all folds. Widens mainly the outer tails, insuring against catastrophic
+    # underprediction in an extreme season (2024) for a small cost in normal ones -> better WIS
+    # and near-nominal coverage. This is the recommended submission variant.
+    cfactors = conformal_widen_factors(vincent_wide[vincent_wide["fold_id"] == CALIB_FOLD])
+    vincent_cal = score_wide(apply_conformal_widen(vincent_wide, cfactors))
+    vincent_cal["model"] = "ensemble_conformal"
+    pd.Series(cfactors, name="factor").rename_axis("interval_level").to_csv(METRICS_DIR / "conformal_factors.csv")
+
+    combined = pd.concat([allpreds, vincent, invwis, vincent_cal], ignore_index=True)
     combined.to_csv(METRICS_DIR / "final_scored.csv", index=False)
 
     leaderboard = combined.groupby("model")[SCORE_COLS].mean().reset_index().sort_values("wis")
@@ -59,7 +74,8 @@ def main():
     )
     nwis.to_csv(METRICS_DIR / "final_leaderboard_normalized.csv", index=False)
 
-    print("Inverse-WIS weights (tuned on fold 1):", {k: round(v, 3) for k, v in weights.items()})
+    print(f"Inverse-WIS weights (tuned on fold {CALIB_FOLD}):", {k: round(v, 3) for k, v in weights.items()})
+    print(f"Conformal widen factors (tuned on fold {CALIB_FOLD}):", {k: round(v, 2) for k, v in cfactors.items()})
     print("\n=== Final leaderboard (overall mean WIS) ===")
     print(leaderboard.to_string(index=False))
     print("\n=== Official NORMALIZED WIS (sum WIS / sum cases; lower=better) ===")
