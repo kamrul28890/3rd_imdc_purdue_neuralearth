@@ -1,0 +1,255 @@
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,margin=2.3cm]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{titlesec}
+\usepackage{setspace}
+
+\hypersetup{colorlinks=true, linkcolor=blue!45!black, urlcolor=blue!45!black, citecolor=blue!45!black}
+\captionsetup{font=small, labelfont=bf}
+\titleformat{\section}{\normalfont\large\bfseries}{}{0em}{}
+\titleformat{\subsection}{\normalfont\bfseries}{}{0em}{}
+\onehalfspacing
+
+\title{\textbf{Supporting Information}\\[0.3em]
+Probabilistic dengue and chikungunya forecasting in Brazil:\\
+metric-dependent model rankings, regime-shift fragility, and conformal ensembles}
+\date{}
+
+\begin{document}
+\maketitle
+\vspace{-2em}
+
+\noindent This document provides the scoring definitions (S1), full model configurations (S2), the
+conformal recalibration and ensemble-composition robustness analysis (S3), normalized WIS by season
+(S4), the EPIFORGE 2020 reporting checklist (S5), exploratory data analysis (S6), and the
+reproducibility statement (S7). All numbers correspond to the committed backtest and are reproducible
+from the released pipeline.
+
+\section*{S1 Text. Scoring}
+Forecasts are submitted as the nine quantiles $\tau \in \{0.025, 0.05, 0.10, 0.25, 0.50, 0.75, 0.90,
+0.95, 0.975\}$ per state and week, which define the median and the four central prediction intervals
+at nominal levels 50, 80, 90, and 95 percent. The weighted interval score is
+\[
+\mathrm{WIS}(F,y)=\frac{1}{K+\tfrac12}\Big[\tfrac12\,|y-m| + \sum_{k=1}^{K}\frac{\alpha_k}{2}\,
+\mathrm{IS}_{\alpha_k}(\ell_k,u_k,y)\Big],\qquad
+\mathrm{IS}_{\alpha}(\ell,u,y)=(u-\ell)+\tfrac{2}{\alpha}(\ell-y)\mathbf{1}\{y<\ell\}+\tfrac{2}{\alpha}(y-u)\mathbf{1}\{y>u\},
+\]
+with $m$ the predictive median, $K=4$ central intervals, and $\alpha_k = 1 - L_k/100$. This equals the
+mean pinball loss over the nine quantiles up to the constant weighting, the exact discrete
+approximation to the continuous ranked probability score. We verified our implementation against the
+challenge platform's own scorer to machine precision on a shared set of forecasts, and against a
+hand-computed toy case that caught an early normalization error (division by $9$ rather than
+$K+\tfrac12 = 4.5$). Alongside mean WIS we report: empirical interval coverage; a decomposition of WIS
+into a dispersion term and directional over- and under-prediction penalties; a per-unit relative WIS
+that scores each state-season-horizon against the naive baseline and takes a geometric mean, which
+weights every unit equally; and the normalized WIS, the sum of WIS divided by the sum of observed
+cases, which is the challenge's headline metric and is scale-free across regions.
+
+\section*{S2 Text. Model configurations}
+\textbf{Features (gradient boosting).} The LightGBM model is fit on a synthetic-origin panel that
+expands each fold into many weekly origins crossed with forecast horizons 1 to 67 weeks, with
+origin-anchored features computed only from the cutoff-filtered history:
+\begin{itemize}
+\item \emph{Autoregressive:} log-incidence lags at 1, 2, 3, 4, 8, and 52 weeks; rolling mean over 4
+and 8 weeks; rolling standard deviation over 4 weeks; rolling maximum over 12 weeks.
+\item \emph{Seasonality:} target epidemiological week; first and second sine and cosine harmonics; a
+target-relative seasonal anchor equal to the most recent same-target-epiweek incidence at or before
+the origin.
+\item \emph{Observed climate (four-week means at the origin):} temperature, precipitation, and
+relative humidity, plus a temperature anomaly against each state's same-epiweek climatology.
+\item \emph{Seasonal climate forecast:} the seasonal forecast of temperature, humidity, and
+precipitation for the target month, merged leakage-safely so that only forecasts issued at or before
+the origin are used.
+\item \emph{Ocean oscillation indices:} El Ni\~no--Southern Oscillation, Indian Ocean Dipole, and
+Pacific Decadal Oscillation, each at lags 0, 4, 8, 12, 26, and 52 weeks.
+\item \emph{Static:} log population; population-weighted K\"oppen climate-zone fractions; biome
+fractions; forecast horizon in weeks.
+\end{itemize}
+
+\noindent\textbf{Hyperparameters (S1 Table).} Table~\ref{tab:hparams} lists the frozen configuration
+of each model. These were chosen a priori as conservative defaults. A separate search that preferred a
+deeper boosted configuration (num\_leaves 63, max\_depth 7) improved an internal time-block holdout by
+about 5 percent but worsened the true backtest, and was not adopted (main text
+the main text, negative results).
+
+\begin{table}[t]
+\centering\small
+\caption{\textbf{S1 Table. Frozen model configurations.}}
+\label{tab:hparams}
+\begin{tabular}{@{}p{0.22\textwidth}p{0.7\textwidth}@{}}
+\toprule
+\textbf{Model} & \textbf{Configuration} \\
+\midrule
+LightGBM (per quantile) & objective: quantile at each of the nine levels; num\_leaves 31; max\_depth 5;
+learning\_rate 0.05; 400 boosting rounds; feature\_fraction 0.8; bagging\_fraction 0.8; bagging\_freq 1;
+seed 42; deterministic. Intervals calibrated by conformalized quantile regression on a trailing
+78-week window. \\
+\addlinespace
+GRU deep ensemble & input sequence length 104 weeks; single-layer GRU encoder, hidden size 48, shared
+across all 26 states; per-state embedding of dimension 8; decoder is a two-layer perceptron with
+hidden size 64, ReLU, and dropout 0.1; negative-binomial output head; quantiles analytic from the
+predictive distribution; deep ensemble of 5 independently seeded runs pooled by quantile averaging;
+40 epochs, Adam, learning rate $10^{-3}$. \\
+\addlinespace
+Semi-mechanistic & 800 bootstrap resamples of whole historical season trajectories; season length 53
+weeks; negative-binomial observation model; a local reimplementation of Richards-curve
+epidemic-scanner fits. \\
+\addlinespace
+Ensembles & per-quantile median (Vincentization) of the climatological, gradient-boosted, and
+deep-learning models; and inverse-WIS weighting tuned only on the designated tuning season. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section*{S3 Text. Conformal recalibration and ensemble composition}
+\textbf{Conformal recalibration.} For each central interval level $L$ with bounds $[\ell_L,u_L]$ and
+median $m$, and for each calibration unit, the multiplicative factor needed to just cover the
+observation is $r=(y-m)/(u_L-m)$ when $y>m$ and $r=(m-y)/(m-\ell_L)$ when $y<m$, and $0$ otherwise. The
+widening factor $s_L$ is the $L/100$ empirical quantile of $r$ over the tuning season, so that widening
+the interval about the median by $s_L$ yields approximately $L$ percent empirical coverage. The
+estimated factors are $s_{50}=1.03$, $s_{80}=1.00$, $s_{90}=1.23$, and $s_{95}=1.73$. They are gentle
+and concentrate on the outer tails, which is why the recalibration protects against catastrophic
+under-prediction in the outbreak season at small cost in ordinary seasons. Recalibrating the ensemble
+output outperforms recalibrating any single member, because the per-quantile median across members
+otherwise dilutes a member's widening (recalibrating the deep-learning member alone yields mean WIS
+1259 versus 1216 for the ensemble-output recalibration).
+
+\noindent\textbf{Member-composition robustness (S2 Table).} Table~\ref{tab:sweep} scores every
+member subset under the same conformal recalibration. The chosen three-member ensemble is close to the
+best composition by the headline normalized WIS, and no subset is better on both the all-season and the
+ordinary-season metric. The subset that appears best by all-season mean WIS
+(climatological plus mechanistic) is the worst of the strong subsets on ordinary seasons
+(normalized WIS 0.420 versus 0.333), because it wins only by handling the 2024 outlier and drops the
+two machine-learning models that carry the ordinary-season signal. This is the composition-level
+analogue of the metric-disagreement finding.
+
+\begin{table}[t]
+\centering\small
+\caption{\textbf{S2 Table. Ensemble composition sweep} (each subset with conformal recalibration).
+nWIS is normalized WIS. The chosen composition is in bold.}
+\label{tab:sweep}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+\textbf{Members} & \textbf{Mean WIS} & \textbf{nWIS all} & \textbf{nWIS ordinary} \\
+\midrule
+Climatological + Mechanistic & 1185 & 0.541 & 0.420 \\
+Climatological + GRU + Mechanistic & 1213 & 0.554 & 0.387 \\
+\textbf{Climatological + LightGBM + GRU (chosen)} & \textbf{1216} & \textbf{0.555} & \textbf{0.333} \\
+Climatological + GRU & 1216 & 0.555 & 0.326 \\
+GRU + Mechanistic & 1217 & 0.556 & 0.339 \\
+Climatological + LightGBM + GRU + Mechanistic & 1247 & 0.569 & 0.356 \\
+LightGBM + GRU & 1299 & 0.593 & 0.331 \\
+LightGBM + Mechanistic & 1314 & 0.600 & 0.408 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent\textbf{Weight robustness.} Inverse-WIS ensemble weights are stable across the choice of
+tuning season: tuning on fold 1 gives (climatological 0.31, LightGBM 0.34, GRU 0.35); on fold 2,
+(0.33, 0.36, 0.30); on fold 3, (0.31, 0.25, 0.45). The unweighted median ensemble avoids this choice
+entirely and performs comparably, which is why it is preferred.
+
+\section*{S4 Table. Normalized WIS by season}
+Table~\ref{tab:nwisfold} gives normalized WIS by model and season. It shows the regime split
+numerically: the deep network is best on the ordinary seasons (fold 3, 0.271) but worst on the 2024
+outlier (fold 2, 0.798), while the conformal ensemble has the best outbreak-season normalized WIS of
+any ensemble (0.671) and is therefore best overall.
+
+\begin{table}[t]
+\centering\small
+\caption{\textbf{S4 Table. Dengue normalized WIS by season.} Lower is better. Best in each column in bold.}
+\label{tab:nwisfold}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+\textbf{Model} & \textbf{Fold 1} & \textbf{Fold 2} & \textbf{Fold 3} & \textbf{Fold 4} \\
+\midrule
+Ensemble (conformal)      & 0.308 & \textbf{0.671} & 0.335 & 0.477 \\
+Ensemble (Vincentization) & 0.308 & 0.720 & 0.325 & \textbf{0.436} \\
+Ensemble (inverse-WIS)    & \textbf{0.292} & 0.727 & 0.321 & 0.507 \\
+LightGBM                  & 0.320 & 0.671 & 0.492 & 0.866 \\
+Mechanistic               & 0.425 & 0.680 & 0.421 & 0.552 \\
+Climatological            & 0.350 & 0.724 & 0.394 & 0.446 \\
+GRU                       & 0.308 & 0.798 & \textbf{0.271} & 0.451 \\
+Seasonal-naive            & 0.454 & 0.776 & 0.444 & 0.528 \\
+Naive                     & 0.659 & 0.773 & 0.806 & 0.653 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section*{S5 Text. EPIFORGE 2020 reporting checklist}
+Table~\ref{tab:epiforge} maps the recommended reporting items for epidemic forecasting research to
+their location in the manuscript and this Supporting Information.
+
+\begin{table}[t]
+\centering\small
+\caption{\textbf{S3 Table. EPIFORGE 2020 checklist mapping.}}
+\label{tab:epiforge}
+\begin{tabular}{@{}p{0.42\textwidth}p{0.5\textwidth}@{}}
+\toprule
+\textbf{Item} & \textbf{Location} \\
+\midrule
+Study purpose and forecasting objectives & Introduction; Results, study design \\
+Forecast targets and horizons & Results, study design; Methods, data and targets \\
+Data sources and provenance & Methods, data and targets; S2 Text \\
+Data pre-processing and covariates & Methods; S2 Text (feature list) \\
+Model descriptions and assumptions & Methods, models; S1 Table \\
+Uncertainty quantification & Methods, scoring and conformal; S1, S3 Text \\
+Validation approach and leakage control & Methods, backtest design \\
+Performance metrics & Methods, scoring; S1 Text \\
+Baseline and comparator models & Results; Tables in main text \\
+Results with uncertainty and calibration & Results; Figures 2 to 5 \\
+Interpretation, generalizability, limitations & Discussion \\
+Data and code availability & Data and code availability; S7 Text \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section*{S6 Figs. Exploratory data analysis}
+The following figures summarize the data that motivated the modeling choices. S1 Fig shows the
+per-state seasonal climatology of dengue incidence. S2 Fig shows the lagged cross-correlation between
+climate variables and incidence. S3 Fig shows incidence stratified by K\"oppen climate zone. S4 Fig
+relates annual dengue totals to the El Ni\~no--Southern Oscillation. S5 Fig shows the distribution of
+epidemic peak weeks across states and seasons.
+
+\begin{figure}[t]\centering
+\includegraphics[width=0.8\textwidth]{../results/figures/dengue_climatology.png}
+\caption{\textbf{S1 Fig. Seasonal climatology of dengue incidence by state.}}
+\end{figure}
+
+\begin{figure}[t]\centering
+\includegraphics[width=0.8\textwidth]{../results/figures/climate_lag_cross_correlation.png}
+\caption{\textbf{S2 Fig. Lagged cross-correlation of climate variables with dengue incidence.}}
+\end{figure}
+
+\begin{figure}[t]\centering
+\includegraphics[width=0.75\textwidth]{../results/figures/dengue_incidence_by_koppen.png}
+\caption{\textbf{S3 Fig. Dengue incidence by K\"oppen climate zone.}}
+\end{figure}
+
+\begin{figure}[t]\centering
+\includegraphics[width=0.75\textwidth]{../results/figures/dengue_vs_enso_annual.png}
+\caption{\textbf{S4 Fig. Annual dengue totals versus the El Ni\~no--Southern Oscillation index.}}
+\end{figure}
+
+\begin{figure}[t]\centering
+\includegraphics[width=0.75\textwidth]{../results/figures/dengue_peak_week_distribution.png}
+\caption{\textbf{S5 Fig. Distribution of epidemic peak weeks across states and seasons.}}
+\end{figure}
+
+\section*{S7 Text. Reproducibility and provenance}
+The complete pipeline is released as an installable package with a single command to reproduce every
+result. Leakage safety, scoring correctness, model persistence, and every model family are covered by
+an automated test suite that runs in continuous integration. All model fitting is deterministic under a
+fixed seed: gradient boosting uses LightGBM deterministic mode, and the deep ensemble fixes the seed of
+each member. A provenance manifest records the exact data checksums and code revision behind each
+reported number, and the per-state scored predictions for all models are released so that any table or
+figure can be regenerated. Validated submission files for the four official tracks (dengue and
+chikungunya, at state and city level) are included.
+
+\end{document}

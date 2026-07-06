@@ -134,8 +134,7 @@ reported separately.
 \caption{\textbf{National weekly dengue trend and study design.} Weekly reported dengue cases
 aggregated to the national level, 2010--2026. The 2024 season stands roughly four times above any
 prior year. Model evaluation uses four official retrospective seasons, each with a training cutoff,
-a 15-week reporting gap, and a target window; forecasts are scored only on the target window.
-Figure to be extended with an explicit fold-timeline panel and a state map.}
+a 15-week reporting gap, and a target window; forecasts are scored only on the target window.}
 \label{fig:overview}
 \end{figure}
 
@@ -181,8 +180,8 @@ Naive                     & 726 & 3833 & 1056 & 255 \\
 \includegraphics[width=0.72\textwidth]{../results/figures/paper_wis_by_fold.png}
 \caption{\textbf{Mean WIS by model and season (log scale).} Model rankings reorder across seasons.
 The deep network is best in ordinary seasons and worst on the 2024 outlier; the ensemble avoids
-every model's worst-season failure. Figure to be regenerated to include the conformal ensemble and
-the current values in Table~\ref{tab:byfold}.}
+every model's worst-season failure. The conformal-recalibrated ensemble (Section~\ref{sec:conformal})
+is shown alongside its members.}
 \label{fig:byfold}
 \end{figure}
 
@@ -263,10 +262,12 @@ aggregate can mislead.
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.72\textwidth]{../results/figures/paper_relative_wis.png}
-\caption{\textbf{Metric-dependent rankings.} Scale-free relative WIS on the ordinary seasons
-compared with magnitude-weighted mean WIS. The single-model ranking reorders: the deep network,
-weakest by mean WIS on the outlier, is strongest on ordinary seasons by the scale-free metric.
-Figure to be redrawn as an explicit rank-reordering (slope) chart with the current values.}
+\caption{\textbf{The best model depends on the metric.} Model rank by magnitude-weighted mean WIS
+over all seasons (left) and by normalized WIS over the ordinary seasons with the 2024 outlier
+excluded (right); rank 1 is best. The rankings reorder: the deep network rises from last by mean WIS
+to first on ordinary seasons, and the gradient-boosted model falls from third to last, while the two
+ensembles stay near the top of both. Values in parentheses are mean WIS (left) and normalized WIS
+(right).}
 \label{fig:relwis}
 \end{figure}
 
@@ -287,8 +288,8 @@ of Section~\ref{sec:conformal} completes it.
 \includegraphics[width=0.6\textwidth]{../results/figures/paper_coverage.png}
 \caption{\textbf{Interval calibration by model.} Empirical versus nominal coverage; points on the
 diagonal are perfectly calibrated. The deep network is markedly overconfident; conformalized
-quantile regression corrects the gradient-boosted model. Figure to be regenerated with the current
-model set including the conformal ensemble.}
+quantile regression corrects the gradient-boosted model, and the conformal-recalibrated ensemble
+tracks the diagonal at the outer intervals.}
 \label{fig:coverage}
 \end{figure}
 
