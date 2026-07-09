@@ -75,14 +75,16 @@ statistical recalibration of the ensemble's uncertainty improved both accuracy a
 adding more data or model complexity did not help. Our full pipeline is openly available.
 
 \section{Introduction}
-Dengue is among the fastest-spreading mosquito-borne diseases, and Brazil bears one of the largest
-national burdens \citep{lowe2021,colon2021}. The 2024 season broke the national record by a wide
+Dengue is among the fastest-spreading mosquito-borne diseases, with an estimated 390 million
+infections each year and roughly half of the world's population at risk, a range that continues to
+expand with climate change and urbanization \citep{bhatt2013,messina2019,colon2021}. Brazil bears one
+of the largest national burdens \citep{lowe2021}. The 2024 season broke the national record by a wide
 margin, with a peak of 451{,}578 reported cases in a single epidemiological week and an annual total
 near 6.67 million, roughly four times the next-largest year on record. Transmission is shaped by
 climate, and the 2023--24 El Ni\~no is one of several drivers implicated in the surge. Against this
 background, arboviral forecasting has moved from point prediction toward full probabilistic
 forecasts, motivated by the recognition that preparedness decisions depend on the entire predictive
-distribution rather than a single expected value \citep{johansson2019,cramer2022}.
+distribution rather than a single expected value \citep{gneiting2014,johansson2019,cramer2022}.
 
 The Infodengue--Mosqlimate Dengue Challenge (IMDC) operationalizes this shift. It invites teams to
 submit weekly, state-level probabilistic forecasts with prescribed quantiles, scored by the weighted
@@ -248,6 +250,32 @@ toward the diagonal.}
 \label{fig:conformal}
 \end{figure}
 
+\subsection{The key differences are statistically significant}\label{sec:significance}
+The absolute skill of each model carries wide uncertainty. A block bootstrap over the 104
+state-season units gives a 95 percent interval on the conformal ensemble's normalized WIS of
+$[0.404, 0.635]$, and the intervals of the leading models overlap (Fig~\ref{fig:significance}A), a
+direct consequence of the outbreak season inflating the variance of any magnitude-weighted score. The
+comparisons that matter are nonetheless decisive, because the models are strongly correlated across
+units and a paired analysis removes the shared, season-driven variance (Fig~\ref{fig:significance}B).
+The conformal recalibration improves on the median ensemble by a mean 64.8 WIS (95 percent CI
+$[50.1, 79.5]$) and on the best single model, LightGBM, by 83.5 $([53.4, 115.8])$; on ordinary seasons
+the deep network beats LightGBM by 153.3 $([97.8, 215.8])$; and the conformal ensemble beats the naive
+baseline by 448 $([387, 514])$. All four intervals exclude zero. The lesson is methodological as much
+as substantive: in a record with one extreme season, marginal skill intervals are wide, but paired
+comparisons remain informative and are the sound basis for model selection.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.95\textwidth]{../results/figures/paper_significance.png}
+\caption{\textbf{Statistical significance of the model comparisons.} (A) Normalized WIS with 95
+percent block-bootstrap intervals over state-season units; the leading models' intervals overlap
+because the 2024 outbreak inflates the variance of absolute skill. (B) Paired differences in mean WIS
+with 95 percent intervals; all three comparisons lie left of zero, so the conformal ensemble
+significantly beats the median ensemble and LightGBM, and the deep network significantly beats
+LightGBM on ordinary seasons.}
+\label{fig:significance}
+\end{figure}
+
 \subsection{The winner depends on the evaluation metric}\label{sec:metric}
 The overall mean WIS in Table~\ref{tab:leaderboard} is dominated by the largest states and by the
 outbreak season, both of which contribute large absolute scores. The challenge's headline metric is
@@ -310,6 +338,30 @@ tracks the diagonal at the outer intervals.}
 \label{fig:coverage}
 \end{figure}
 
+\subsection{Skill varies with horizon, and the outbreak failure is under-prediction}\label{sec:robustness}
+Because the 15-week reporting gap places every target 16 to 67 weeks ahead, we stratified skill by
+lead time on the ordinary seasons (Fig~\ref{fig:robustness}A). The deep network's advantage is
+horizon-dependent: it is the best model at short lead times (normalized WIS 0.25 at 16 to 27 weeks)
+but degrades at the longest horizons (0.38 at 52 to 67 weeks), where it converges with the
+gradient-boosted model. The conformal ensemble is the most stable model across horizons and is never
+worst, which mirrors its stability across seasons. Decomposing WIS into its components explains the
+outbreak-season failure directly (Fig~\ref{fig:robustness}B): in the 2024 season the ensemble's score
+is dominated by under-prediction (a mean of 2703 WIS units, against 619 for dispersion and 3 for
+over-prediction), whereas every other season is dominated by dispersion. The record epidemic was not
+mis-shaped but simply larger than any model would predict from pre-season information, which is why
+widening the upper tail, as the conformal recalibration does, is the effective remedy.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.95\textwidth]{../results/figures/paper_robustness.png}
+\caption{\textbf{Robustness across horizons and anatomy of the outbreak-season failure.} (A)
+Normalized WIS by forecast horizon on the ordinary seasons; the deep network leads at short lead times
+and fades at long ones, while the conformal ensemble is stable. (B) WIS decomposition of the conformal
+ensemble by season (log scale); the 2024 season is dominated by under-prediction, not by dispersion or
+over-prediction.}
+\label{fig:robustness}
+\end{figure}
+
 \subsection{Added complexity did not improve forecasts}\label{sec:negative}
 Three interventions that plausibly should have helped did not (Table~\ref{tab:ablation}). First,
 adding observed-climate covariates to the gradient-boosted model, following the distributed-lag
@@ -349,13 +401,22 @@ Hyperparameter tuning & internal holdout $+5\%$, & internal holdout misrepresent
 \end{tabular}
 \end{table}
 
-\subsection{The best model is disease-specific}\label{sec:chik}
-For chikungunya, evaluated on the same harness and states, the gradient-boosted model alone is the
-best forecaster (WIS 82.3), ahead of the ensemble (91.6) and every other model
-(Table~\ref{tab:chik}). It dominates every season, so combining it with weaker models only dilutes
-it. The contrast with dengue, where the ensemble wins, shows that the choice of forecasting model
-should be made per target rather than assumed to transfer across diseases, even within the same
-surveillance system and pipeline.
+\subsection{Chikungunya is a more predictable, contrasting target}\label{sec:chik}
+Brazil reported roughly 422{,}000 chikungunya cases in 2024, a cumulative incidence near 199 per
+100{,}000, and the virus has recurred across the country since its 2014 introduction with a spatial
+pattern shaped by heterogeneous population immunity~\citep{desouza2023}.
+We forecast chikungunya on the same 26 states, harness, and seasons as dengue. Two differences stand
+out. First, the gradient-boosted model alone is the best forecaster (WIS 82.3), ahead of the ensemble
+(91.6) and every other model (Table~\ref{tab:chik}); it is best in every season
+(Table~\ref{tab:chikfold}), so combining it with weaker models only dilutes it. Second, chikungunya is
+markedly more predictable than dengue relative to its scale: the 2024 season is only modestly harder
+than the others (mean WIS 125 versus a range of 68 to 143 across seasons), in contrast to the
+order-of-magnitude jump dengue shows in 2024. This matches reports that chikungunya dynamics in Brazil
+are more regular than dengue's~\citep{desouza2023}, plausibly because immunity accumulates
+against a single antigenic type rather than interacting across four co-circulating dengue serotypes.
+The practical consequence is that the best model is disease-specific: a blended ensemble is right for
+dengue, a single well-calibrated learner for chikungunya, even within one surveillance system and
+pipeline.
 
 \begin{table}[t]
 \centering\small
@@ -372,6 +433,57 @@ Climatological            & 94.4 & 55 & 84 \\
 Seasonal-naive            & 97.8 & 49 & 89 \\
 Mechanistic               & 101.0 & 51 & 85 \\
 Naive                     & 123.1 & 40 & 79 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\centering\small
+\caption{\textbf{Chikungunya mean WIS by season.} LightGBM is best in every season, unlike dengue, and
+the 2024 season (fold 2) is only modestly harder than the others.}
+\label{tab:chikfold}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+\textbf{Model} & \textbf{Fold 1} & \textbf{Fold 2} & \textbf{Fold 3} & \textbf{Fold 4} \\
+\midrule
+LightGBM                  & \textbf{81.5} & \textbf{125.0} & \textbf{67.8} & \textbf{20.6} \\
+Ensemble (Vincentization) & 88.3 & 142.0 & 73.8 & 25.2 \\
+Climatological            & 94.3 & 143.3 & 75.3 & 27.6 \\
+Seasonal-naive            & 92.8 & 152.3 & 77.1 & 32.5 \\
+Mechanistic               & 90.7 & 166.3 & 77.8 & 29.2 \\
+Naive                     & 181.3 & 145.7 & 75.3 & 48.6 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{City-level forecasting is substantially harder}\label{sec:city}
+The challenge also solicits municipal forecasts for 15 dengue and 10 chikungunya cities, an optional
+target we submitted with the climatological quantile model. City-level forecasting is much harder than
+state-level: the best model's normalized WIS is 0.60 for dengue cities and 0.87 for chikungunya cities
+(Table~\ref{tab:city}), against 0.56 and 0.64 at the state level. Interval coverage is also poorer (50
+percent coverage of 36 percent for dengue cities), because many mid-sized municipalities have episodic,
+over-dispersed series with long runs of zero counts that a per-week empirical quantile under-covers. A
+degenerate all-zero median is a concrete failure mode of these sparse series, which we addressed by
+switching the point forecast to a clamped predictive mean; a principled zero-inflated treatment is a
+clear direction for the municipal tracks. These results quantify the resolution penalty of forecasting
+at the level where interventions are delivered.
+
+\begin{table}[t]
+\centering\small
+\caption{\textbf{City-level backtest} (optional tracks; climatological quantile model submitted). WIS
+and normalized WIS averaged over the target cities and four seasons.}
+\label{tab:city}
+\begin{tabular}{@{}llrrc@{}}
+\toprule
+\textbf{Disease} & \textbf{Model} & \textbf{WIS} & \textbf{nWIS} & \textbf{Cov.\ 50 (\%)} \\
+\midrule
+Dengue (15 cities)      & Climatological & \textbf{128.7} & \textbf{0.60} & 36 \\
+                        & Seasonal-naive & 138.1 & 0.65 & 31 \\
+                        & Naive          & 141.2 & 0.66 & 30 \\
+\addlinespace
+Chikungunya (10 cities) & Climatological & \textbf{32.2} & \textbf{0.87} & 54 \\
+                        & Seasonal-naive & 32.5 & 0.87 & 49 \\
+                        & Naive          & 36.2 & 0.97 & 32 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -414,7 +526,7 @@ toward more covariates in a boosted model.
 \subsection{Conformal recalibration as transferable insurance}
 The conformal recalibration is simple, scale-free, and cheap, and it improves both accuracy and
 calibration. It connects to conformalized quantile regression \citep{romano2019} and to adaptive
-conformal methods for distribution shift \citep{gibbs2021}, and it matches the online-recalibration
+conformal methods for distribution shift \citep{gibbs2021,zaffran2022}, and it matches the online-recalibration
 result reported for probabilistic dengue forecasting elsewhere. Because it widens mainly the outer
 tails, it protects against the failure mode that dominates the outbreak season without materially
 degrading ordinary-season sharpness. For an operational forecaster who cannot know in advance whether
@@ -432,8 +544,9 @@ the challenge's tuning-fold discipline rather than by a fully online procedure.
 \subsection{Future work}
 The immediate next step is the challenge forecast phase, which will provide a genuine prospective
 score for the recalibrated ensemble on the 2026--27 season. Beyond it, three directions follow from
-our results: a Bayesian spatiotemporal member with a distributed-lag non-linear climate response,
-which our negative result suggests is the right home for climate covariates; hierarchical
+our results: a Bayesian spatiotemporal or endemic-epidemic member with a distributed-lag non-linear
+climate response \citep{held2005,meyer2017}, which our negative result suggests is the right home for
+climate covariates; hierarchical
 reconciliation across state, city, and national forecasts for coherence; and municipal-level feature
 engineering for the optional city tracks.
 
@@ -524,6 +637,26 @@ All code, data-processing pipeline, backtests, figures, and validated submission
 at \url{https://github.com/kamrul28890/3rd_imdc_purdue_neuralearth}. The surveillance and covariate
 data are distributed by the challenge through the Mosqlimate platform.
 
+\section*{Author contributions}
+Conceptualization, methodology, software, formal analysis, investigation, visualization, and writing
+of the original draft: M.K.K. Validation, data curation, and writing (review and editing): E.J.E. and
+A.A.H. All authors read and approved the final manuscript.
+
+\section*{Competing interests}
+The authors have declared that no competing interests exist.
+
+\section*{Funding}
+The authors received no specific funding for this work.
+
+\section*{Ethics statement}
+This study used aggregate, publicly available disease-surveillance and covariate data distributed
+through the Infodengue and Mosqlimate platforms. No individual-level data were used and no ethical
+approval was required.
+
+\section*{Acknowledgments}
+We thank the organizers of the Infodengue--Mosqlimate Dengue Challenge and the Infodengue and
+Mosqlimate teams for curating and distributing the data.
+
 \bibliographystyle{unsrtnat}
 \begin{thebibliography}{99}
 \small
@@ -547,6 +680,13 @@ data are distributed by the challenge through the Mosqlimate platform.
 \bibitem{makridakis2020} Makridakis S, Spiliotis E, Assimakopoulos V. The M4 competition: 100,000 time series and 61 forecasting methods. \emph{Int J Forecast} 36(1):54--74 (2020).
 \bibitem{colon2021} Col\'on-Gonz\'alez FJ, Sewe MO, Tompkins AM, et al. Projecting the risk of mosquito-borne diseases in a warmer and more populated world. \emph{Lancet Planet Health} 5(7):e404--e414 (2021).
 \bibitem{richards1959} Richards FJ. A flexible growth function for empirical use. \emph{J Exp Bot} 10(2):290--301 (1959).
+\bibitem{bhatt2013} Bhatt S, Gething PW, Brady OJ, Messina JP, et al. The global distribution and burden of dengue. \emph{Nature} 496:504--507 (2013).
+\bibitem{messina2019} Messina JP, Brady OJ, Golding N, Kraemer MUG, et al. The current and future global distribution and population at risk of dengue. \emph{Nat Microbiol} 4:1508--1515 (2019).
+\bibitem{desouza2023} de Souza WM, de Lima STS, Sim\~oes Mello LM, et al. Spatiotemporal dynamics and recurrence of chikungunya virus in Brazil: an epidemiological study. \emph{Lancet Microbe} 4(5):e319--e329 (2023).
+\bibitem{gneiting2014} Gneiting T, Katzfuss M. Probabilistic forecasting. \emph{Annu Rev Stat Appl} 1:125--151 (2014).
+\bibitem{zaffran2022} Zaffran M, F\'eron O, Goude Y, Josse J, Dieuleveut A. Adaptive conformal predictions for time series. \emph{Proc 39th Int Conf Machine Learning (PMLR)} 162 (2022).
+\bibitem{held2005} Held L, H\"ohle M, Hofmann M. A statistical framework for the analysis of multivariate infectious disease surveillance counts. \emph{Stat Model} 5(3):187--199 (2005).
+\bibitem{meyer2017} Meyer S, Held L, H\"ohle M. Spatio-temporal analysis of epidemic phenomena using the R package surveillance. \emph{J Stat Softw} 77(11):1--55 (2017).
 \end{thebibliography}
 
 \end{document}
