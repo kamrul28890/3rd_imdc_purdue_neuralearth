@@ -11,14 +11,25 @@ full methodology and results.
 - **Team:** Neural Earth
 - **Main contact / team leader:** Md Kamruzzaman Kamrul — kamrul28890@gmail.com
   (Mosqlimate platform account: `kamrul28890`)
-- **Members, affiliations, and contributions** (CRediT taxonomy):
-  - **Md Kamruzzaman Kamrul** — Purdue University, West Lafayette, IN, USA —
-    conceptualization, methodology, software, formal analysis, investigation,
-    visualization, and writing of the original draft.
-  - **Eashraque Jahan Easha** — University of Denver, Denver, CO, USA —
-    validation, data curation, and writing (review & editing).
-  - **Abdullah Al Helal** — Oklahoma State University, Stillwater, OK, USA —
-    validation, data curation, and writing (review & editing).
+
+The work divides into three parts. **Md Kamruzzaman Kamrul led the modeling and analysis —
+the core and largest part of the project — and drafted the manuscript**, while the two
+co-authors led the supporting data/validation and writing/documentation streams.
+
+| Part | Lead | Scope |
+|------|------|-------|
+| **1. Modeling, methodology & software** | **Md Kamruzzaman Kamrul** (Purdue University) | Study design; the full forecasting pipeline — leakage-safe features, the WIS/CRPS evaluation harness, baselines, LightGBM (CQR), the GRU deep ensemble, the mechanistic model, the Vincentization ensemble, and conformal recalibration; model selection and formal analysis; submission packaging; figures; and the original manuscript draft. |
+| **2. Data curation, validation & reproducibility** | **Abdullah Al Helal** (Oklahoma State University) | Assembling and integrity-checking the official dataset, verifying EW‑25 leakage compliance and interval validity, the reproducibility and test suite, and manuscript review & editing. |
+| **3. Manuscript, literature & documentation** | **Eashraque Jahan Easha** (University of Denver) | Literature review and references, results reporting and figure narrative, repository documentation, and manuscript review & editing. |
+
+CRediT taxonomy:
+- **Md Kamruzzaman Kamrul** — Purdue University, West Lafayette, IN, USA —
+  conceptualization, methodology, software, formal analysis, investigation, visualization,
+  writing (original draft), and project administration.
+- **Abdullah Al Helal** — Oklahoma State University, Stillwater, OK, USA —
+  data curation, validation, software (testing & reproducibility), and writing (review & editing).
+- **Eashraque Jahan Easha** — University of Denver, Denver, CO, USA —
+  investigation (literature review), validation, visualization, and writing (review & editing).
 
 ## 2. Repository structure
 - `src/imdc/` — installable pipeline: data loading/folds/leakage guards, features, evaluation

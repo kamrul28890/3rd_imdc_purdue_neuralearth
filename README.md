@@ -1,73 +1,89 @@
 # IMDC 2026 — Team Neural Earth
 
 Forecasting pipeline for the **3rd Infodengue–Mosqlimate Dengue Challenge (IMDC 2026)**:
-weekly probabilistic dengue (and chikungunya) forecasts for Brazilian states and cities,
-with the end goal of a competitive submission and a PNAS-style journal paper.
+weekly probabilistic dengue and chikungunya forecasts for Brazilian states and cities.
 
-**Team Neural Earth**
-- Abdullah Al Helal — Oklahoma State University
-- Md Kamruzzaman Kamrul — Purdue University (team leader)
-- Eashraque Jahan Easha — University of Denver
-
-Contact: kamrul28890@gmail.com · Platform account: `kamrul28890`
-
-> 📋 **IMDC documentation (per the challenge guidelines):** [`MODEL_CARD.md`](MODEL_CARD.md)
-> answers, in order, the required items — team & member contributions, repository structure,
-> libraries & dependencies, data & variables, model training, how the **EW‑25 data-availability
-> rule** was met, how the **prediction intervals** were computed, and DOI references.
-
-This README is also the entry point for **resuming work on another machine** — it records
-what is done, where everything lives, how to set up the environment, and how to
-pick up from here.
+**Contact:** Md Kamruzzaman Kamrul — kamrul28890@gmail.com · Mosqlimate account: `kamrul28890`
 
 ---
 
-## Current status (as of 2026-07-02)
+## Team and contributions
+
+The project divides into three parts. **Md Kamruzzaman Kamrul led the modeling and analysis —
+the core and largest part — and drafted the manuscript**; the two co-authors led the supporting
+data/validation and writing/documentation streams.
+
+| Part | Lead | Scope |
+|------|------|-------|
+| **1. Modeling, methodology & software** | **Md Kamruzzaman Kamrul** · Purdue University *(team leader)* | Study design; the full forecasting pipeline (leakage-safe features, WIS/CRPS evaluation harness, baselines, LightGBM + CQR, GRU deep ensemble, mechanistic model, Vincentization ensemble, conformal recalibration); model selection & formal analysis; submission packaging; figures; original manuscript draft. |
+| **2. Data curation, validation & reproducibility** | **Abdullah Al Helal** · Oklahoma State University | Dataset assembly & integrity checks; EW‑25 leakage-compliance and interval-validity verification; reproducibility and test suite; manuscript review & editing. |
+| **3. Manuscript, literature & documentation** | **Eashraque Jahan Easha** · University of Denver | Literature review & references; results reporting and figure narrative; repository documentation; manuscript review & editing. |
+
+Full CRediT-taxonomy statement: [`MODEL_CARD.md` §1](MODEL_CARD.md).
+
+---
+
+## IMDC documentation checklist
+
+The information required by the challenge guidelines is documented as follows.
+**[`MODEL_CARD.md`](MODEL_CARD.md) is the single compliance document** — its sections map
+one-to-one to these items.
+
+| # | Required item | Where |
+|---|---------------|-------|
+| 1 | Team name, main contact, members' names/affiliations/**contributions** | This README (above) · [`MODEL_CARD.md` §1](MODEL_CARD.md) |
+| 2 | Repository structure | [Repository layout](#repository-layout) · [`MODEL_CARD.md` §2](MODEL_CARD.md) |
+| 3 | Libraries and dependencies | [Setup](#setup-and-reproduction) · [`MODEL_CARD.md` §3](MODEL_CARD.md) · `environment.lock.yml` |
+| 4 | Data and variables | [`MODEL_CARD.md` §4](MODEL_CARD.md) |
+| 5 | Model training process | [`MODEL_CARD.md` §5](MODEL_CARD.md) · `reports/modeling_results_report.pdf` |
+| 6 | How the **EW‑25** data-availability rule was met | [`MODEL_CARD.md` §6](MODEL_CARD.md) |
+| 7 | How the prediction intervals were computed | [`MODEL_CARD.md` §7](MODEL_CARD.md) |
+| 8 | DOI references | [`MODEL_CARD.md` §8](MODEL_CARD.md) |
+
+---
+
+## Status
 
 | Phase | Status |
 |------|--------|
-| 0. Environment & scaffolding | ✅ Done |
-| 1. Data audit & EDA | ✅ Done — `reports/data_findings_report.pdf` |
+| 0–1. Environment, scaffolding, data audit & EDA | ✅ Done — `reports/data_findings_report.pdf` |
 | 2. Backtesting harness + baselines | ✅ Done |
 | 3. Classical ML (LightGBM + CQR) | ✅ Done |
 | 4. Deep learning (GRU + NegBinom) | ✅ Done |
-| 5. Mechanistic | ✅ Done — local reimplementation (EpiScanner API is down; not needed) |
-| 6. Ensemble | ✅ Done |
-| 7. Submission formatting + validation | ✅ Done (upload pending model registration) |
-| 8. Paper | 🟡 Draft — `paper/imdc_paper.pdf` |
-| Optional tracks (chik-state, dengue/chik cities) | ✅ Done — 231 validated submission files |
+| 5. Mechanistic model | ✅ Done (local reimplementation) |
+| 6. Ensemble + conformal recalibration | ✅ Done |
+| 7. Submission packaging + validation | ✅ **Validation phase submitted** (model id 83) |
+| 8. Manuscript | 🟡 Draft — `paper/imdc_paper.pdf` |
+| Optional tracks (chik-state, dengue/chik cities) | ✅ Done |
 
-**64 automated tests pass** (`pytest tests/`). Phases 2–4 + 6 documented in
-`reports/modeling_results_report.pdf`; PNAS-style manuscript draft in `paper/`.
-Project docs: `docs/PLAN.md` (original implementation plan), `docs/IMPROVEMENTS.md`
-(code-level backlog), and **`docs/FUTURE_WORK.md`** (roadmap to the Sept forecast phase + paper).
+Automated test suite passes (`pytest tests/`); modeling write-up in
+`reports/modeling_results_report.pdf`; manuscript in `paper/`. Roadmap to the September
+forecast phase in `docs/FUTURE_WORK.md`.
 
-**To actually submit:** register a model at mosqlimate.org (web UI — the API cannot
-create models; you have none yet), then run `python -m imdc.submission.upload <owner/repo>`
-(add `--publish` to go live). Your API key works and is in `.env` (gitignored).
-The EpiScanner API endpoint is currently down (HTTP 500), which is why Phase 5 is a
-local reimplementation.
+---
 
-### Headline result (backtest, 26 states × 4 folds)
+## Headline result
 
-Mean Weighted Interval Score (WIS), lower is better:
+Backtest over 26 states × 4 seasons (2022–23 … 2025–26). Mean Weighted Interval Score (WIS)
+and official normalized WIS (Σ WIS / Σ cases), both lower-is-better:
 
-| Model | Overall WIS | Coverage 50/80/90/95 |
-|---|---|---|
-| **Ensemble (Vincentization)** | **1288** | 45/75/84/87% |
-| Ensemble (inverse-WIS) | 1291 | 47/77/85/89% |
-| LightGBM (CQR) | 1309 | 49/80/89/93% |
-| Climatological | 1327 | 48/73/82/85% |
-| GRU (NegBinom) | 1373 | 32/57/68/75% |
-| Seasonal-naive | 1459 | — |
-| Naive | 1664 | — |
+| Model | WIS | normWIS | Coverage 50/80/90/95 |
+|---|---|---|---|
+| **Ensemble + conformal recalibration** | **1216** | **0.555** | 47/76/88/93% |
+| Ensemble (Vincentization) | 1281 | 0.585 | 46/76/84/88% |
+| Ensemble (inverse-WIS) | 1287 | 0.588 | 48/76/86/89% |
+| LightGBM (CQR) | 1299 | 0.593 | 51/81/89/93% |
+| Mechanistic | 1303 | 0.595 | 53/79/85/89% |
+| Climatological | 1327 | 0.606 | 48/73/82/85% |
+| GRU (NegBinom) | 1373 | 0.627 | 32/57/68/75% |
+| Seasonal-naive | 1459 | 0.666 | — |
+| Naive | 1664 | 0.760 | — |
 
-The **unweighted quantile-median ensemble is the best and most robust model** — no
-single model wins every fold (the GRU wins the "normal" seasons but fails
-catastrophically on the 2024 outlier; LightGBM is most robust to the outlier but loses
-fold 3), so combining them beats all of them. See the modeling report for the full
-analysis, including the WIS scale-dependence finding (raw mean vs. relative WIS disagree
-on the single-model winner).
+**No single model wins every season** — the GRU is best on normal seasons but fails on the 2024
+outlier; LightGBM is most robust to the outlier but weakest on normal seasons. The unweighted
+quantile-median **ensemble is never worst on any fold**, and **conformal recalibration** of the
+ensemble's tails is the largest single accuracy gain (WIS 1281 → 1216). See the modeling report
+for the full analysis, including the WIS scale-dependence finding.
 
 ---
 
@@ -77,32 +93,36 @@ on the single-model winner).
 src/imdc/                     # installable package (pip install -e .)
   config.py                   # paths, state list, target cities, quantile levels
   data/                       # loaders, fold derivation, leakage guards, aggregation
-  features/panel.py           # synthetic-origin panel + leakage-safe features (Phase 3/4)
-  evaluation/                 # WIS/CRPS metrics, harness, baselines, postprocessing (Phase 2)
-  models/                     # ml_boosted (LGBM), dl_sequence (GRU), ensemble + run_*.py scripts
-  submission/                 # (empty — Phase 7)
-tests/                        # 47 tests: leakage, WIS correctness, every model
+  features/panel.py           # synthetic-origin panel + leakage-safe features
+  evaluation/                 # WIS/CRPS metrics, harness, baselines, postprocessing
+  models/                     # LightGBM, GRU, mechanistic, ensemble + run_*.py scripts
+  submission/                 # platform-schema builders + validator
+results/metrics/              # scored backtest predictions & leaderboards (canonical outputs)
+results/figures/              # paper-ready figures
+submissions/validation/       # platform-ready forecast files per track/season/geography
+tests/                        # leakage, WIS correctness, determinism, every model
 notebooks/                    # 00 data audit, 01/02 EDA (executed)
 reports/                      # data_findings + modeling_results (LaTeX + compiled PDF)
-results/metrics/              # ← ALL scored backtest predictions & leaderboards (the outputs)
-results/figures/              # paper-ready figures
-data/raw/data_imdc_2026/      # official dataset (Git LFS — see below)
+paper/                        # manuscript + supporting information (LaTeX + PDF)
+docs/                         # PLAN, FUTURE_WORK, PAPER_PLAN, IMPROVEMENTS
+data/raw/data_imdc_2026/      # official dataset (Git LFS)
 data/processed/               # regenerable feature cache (gitignored; auto-rebuilds)
-models/                       # trained weights (gitignored; NOT persisted — see below)
-docs/PLAN.md                  # the full phase 2–8 implementation plan
+Makefile                      # `make reproduce` regenerates every result from raw data
 ```
 
-## Resuming on another machine
+---
 
-### 1. Clone (with LFS — the raw data is ~800 MB via Git LFS)
+## Setup and reproduction
+
+### 1. Clone (with LFS — the raw data is ~800 MB)
 ```bash
 git lfs install
 git clone https://github.com/kamrul28890/3rd_imdc_purdue_neuralearth.git
 cd 3rd_imdc_purdue_neuralearth
-git lfs pull        # fetches data/raw/data_imdc_2026/ (climate.csv.gz is 459 MB)
+git lfs pull        # fetches data/raw/data_imdc_2026/
 ```
 
-### 2. Environment (conda; LightGBM/XGBoost come from conda-forge for a working libomp)
+### 2. Environment (conda; LightGBM/XGBoost from conda-forge for a working libomp)
 ```bash
 conda create -n py310 python=3.10 -y
 conda install -n py310 -c conda-forge xgboost lightgbm tectonic pyarrow -y
@@ -110,68 +130,35 @@ conda activate py310
 pip install -e .                       # pandas, numpy, torch, statsmodels, geopandas, mosqlient, ...
 pip install pytest ipykernel nbconvert pymupdf python-dotenv
 ```
-`requirements-freeze.txt` is the exact `pip freeze` if you need to pin versions.
+`requirements-freeze.txt` pins exact versions; `environment.lock.yml` is the full conda export.
 
-**⚠️ Runtime gotcha:** set `KMP_DUPLICATE_LIB_OK=TRUE` whenever LightGBM/XGBoost and
-PyTorch are imported in the same process (both link their own libomp). All `run_*`
-scripts set it automatically; for ad-hoc scripts, `export KMP_DUPLICATE_LIB_OK=TRUE`.
+> **Runtime note:** set `KMP_DUPLICATE_LIB_OK=TRUE` whenever LightGBM/XGBoost and PyTorch are
+> imported in the same process (each links its own libomp). All `run_*` scripts set it automatically.
 
-### 3. Verify
+### 3. Reproduce
 ```bash
-pytest tests/ -q            # expect 47 passed (~5 min; trains small models)
+make reproduce        # all models → ensemble → optional tracks → submissions → figures → manifest
+make reproduce-fast   # reuse the committed GRU predictions (skip the ~55-min GRU retrain)
+make test             # full test suite, incl. determinism guards
 ```
+Every model's scored predictions are already committed in `results/metrics/*_scored.csv`, so you
+do **not** need to re-run anything to inspect or build on the results.
 
-### 4. Re-run backtests (only if you need to regenerate predictions)
-```bash
-python -m imdc.evaluation.run_baselines   # ~2 min
-python -m imdc.models.run_ml               # LightGBM, ~8 min
-python -m imdc.models.run_dl               # GRU, ~55 min (CPU/MPS)
-python -m imdc.models.run_ensemble         # instant (reads saved predictions)
-```
-**You do not need to re-run these to continue.** Every model's scored predictions are
-already committed in `results/metrics/*_scored.csv`; Phases 7–8 build directly on them.
+### Reproducibility guarantees
+1. **Determinism** — baselines, LightGBM (`seed=42`), and the mechanistic model reproduce
+   bit-for-bit (`tests/test_determinism.py`); the GRU is seeded but only bit-reproducible on CPU
+   (Apple-MPS float ops are non-deterministic), so the committed `gru_scored.csv` is canonical.
+2. **One command** — the `Makefile` runs every step in dependency order.
+3. **Provenance** — `scripts/make_manifest.py` writes `RESULTS.md` with the git commit, a SHA-256
+   fingerprint of the raw inputs (`data/raw/data_imdc_2026/CHECKSUMS.sha256`), and the leaderboards.
+4. **Pinned environment** — `environment.lock.yml` (exact) and `environment.yml` (portable).
+5. **Committed outputs** — `results/metrics/*.csv` are the canonical results the paper reads from.
 
-## Reproducibility
+---
 
-The whole pipeline regenerates from raw data with one command:
+## Deadlines
 
-```bash
-make reproduce        # all models -> ensemble -> optional tracks -> submissions -> figures -> manifest
-make reproduce-fast   # same but reuse the committed GRU predictions (skip the ~55-min GRU)
-make test             # 64-test suite, incl. determinism guards
-```
-
-Five reproducibility guarantees:
-1. **Determinism** — baselines, LightGBM (`seed=42, deterministic=True`), and the mechanistic
-   model (seeded RNG) reproduce **bit-for-bit**; `tests/test_determinism.py` enforces this. The
-   GRU is seeded but only bit-reproducible on CPU (Apple-MPS float ops are non-deterministic);
-   the committed `gru_scored.csv` is the canonical DL result.
-2. **One command** — the `Makefile` runs every step in dependency order; each result has a
-   script (no inline notebook-only code produces a committed number).
-3. **Provenance** — `scripts/make_manifest.py` writes `RESULTS.md` with the git commit, a
-   SHA-256 fingerprint of the raw inputs (`data/raw/data_imdc_2026/CHECKSUMS.sha256`), and the
-   current leaderboards, so every number is tied to an exact data + code version.
-4. **Pinned environment** — `environment.lock.yml` is a full `conda env export` (exact versions);
-   `environment.yml` is the minimal portable spec.
-5. **Committed outputs** — `results/metrics/*.csv` are the canonical results the paper/figures
-   read from, decoupled from re-computation.
-
-## Two things to know
-
-- **Model weights are NOT persisted.** Each backtest retrains from scratch; `models/`
-  is empty. This is intentional and costs nothing to resume: the *predictions* in
-  `results/metrics/` are the expensive outputs, and the real 2026-27 forecast will
-  retrain on refreshed data anyway. (If you want the trained artifacts saved, add
-  `booster.save_model()` / `torch.save(state_dict)` to the model classes and re-run.)
-- **Data staleness:** the committed raw data ends 2026-03-08. The real forecast phase
-  needs data through EW25 2026 — **re-pull the dataset from the FTP / Mosqlimate API
-  before generating the true forecast** (Phase 7).
-
-## Deadlines & blockers
-
-- **Validation phase (4 backtest folds) was due 2026-07-01.** The forecasts backing it
-  exist and are validated, but are **not yet packaged to the platform schema (Phase 7)
-  nor uploaded** (needs the API key).
-- **Forecast phase (2026-27 season) due 2026-09-10.**
-- **Get a mosqlimate.org API key** — required for Phase 5 (EpiScanner) and Phase 7
-  (upload). Registration/model-registration is web-UI only.
+- **Validation phase (4 backtest folds):** ✅ submitted (model id 83).
+- **Forecast phase (2026–27 season):** due **2026-09-10**. The committed raw data must be
+  re-pulled through EW 25 2026 before generating the true forecast; the same leakage-safe
+  machinery (see [`MODEL_CARD.md` §6](MODEL_CARD.md)) then produces the EW 41 2026 → EW 40 2027 horizon.
