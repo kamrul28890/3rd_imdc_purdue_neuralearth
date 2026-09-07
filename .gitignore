@@ -35,6 +35,9 @@ email_to_organizers.md
 paper/*.aux
 paper/*.log
 paper/*.out
+paper/*.nav
+paper/*.snm
+paper/*.toc
 reports/*.aux
 reports/*.log
 reports/*.out
