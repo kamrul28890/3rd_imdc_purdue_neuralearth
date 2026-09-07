@@ -21,7 +21,7 @@ from imdc.config import DISEASE_CODE, MANDATORY_UFS, SUBMISSIONS_DIR, UF_TO_ADM1
 from imdc.submission.build import season_date_range
 from imdc.submission.validate import validate_submission
 
-FOLD_SEASON = {1: 2023, 2: 2024, 3: 2025, 4: 2026}
+FOLD_SEASON = {1: 2023, 2: 2024, 3: 2025, 4: 2026, 5: 2027}
 
 
 def git_commit_hash(require_clean: bool = True) -> str:
