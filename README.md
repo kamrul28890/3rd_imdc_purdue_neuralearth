@@ -13,10 +13,11 @@ information required by the IMDC guidelines, organized as follows:
 2. [Repository structure](#2-repository-structure)
 3. [Libraries and dependencies](#3-libraries-and-dependencies)
 4. [Data and variables](#4-data-and-variables)
-5. [Model training process](#5-model-training-process)
-6. [How the EW‑25 data-availability rule was met](#6-how-the-ew25-data-availability-rule-was-met)
-7. [How the prediction intervals were computed](#7-how-the-prediction-intervals-were-computed)
-8. [DOI references](#8-doi-references)
+5. [Data usage restriction](#5-data-usage-restriction)
+6. [Model training process](#6-model-training-process)
+7. [How the EW‑25 data-availability rule was met](#7-how-the-ew25-data-availability-rule-was-met)
+8. [How the prediction intervals were computed](#8-how-the-prediction-intervals-were-computed)
+9. [DOI references](#9-doi-references)
 
 Followed by [results](#results), [setup & reproduction](#setup-and-reproduction), and
 [status & deadlines](#status-and-deadlines).
@@ -118,7 +119,19 @@ archive is included via Git LFS for reproduction.
 
 ---
 
-## 5. Model training process
+## 5. Data usage restriction
+
+Per the challenge's Data Usage Policy, any dataset not available via the official FTP server or the
+Mosqlimate API must be submitted to the organizers so it can be shared with all participants. **We
+used only the official IMDC 2026 dataset** distributed via that FTP server (`data/raw/data_imdc_2026/`,
+listed in §4) plus its own published `*_update_2026` increments used for the forecast-phase refresh
+(`scripts/refresh_data.py`) — no additional, private, or non-shared dataset was introduced at any
+point in this pipeline. All inputs are redistributable within the challenge, and the raw archive is
+included via Git LFS so the full pipeline is reproducible from the same data without re-downloading.
+
+---
+
+## 6. Model training process
 
 Four submission tracks; the best model is chosen **per track** by fold-1 tuning plus scale-free
 relative WIS:
@@ -139,7 +152,7 @@ relative WIS:
 > `scripts/generate_forecast_2026_27.py`. See `MODEL_CARD.md` §5 and `docs/IMPROVEMENTS.md`.
 
 **Training design.** All models train on a **synthetic-origin panel** (weekly forecast origins ×
-horizons 1–67 weeks) with strict leakage-safe cutoff filtering (see §6). Backtests cover the four
+horizons 1–67 weeks) with strict leakage-safe cutoff filtering (see §7). Backtests cover the four
 official validation seasons (2022–23, 2023–24, 2024–25, 2025–26).
 
 **Individual models.**
@@ -152,7 +165,7 @@ official validation seasons (2022–23, 2023–24, 2024–25, 2025–26).
 - **Mechanistic** — a compartmental/renewal-style model producing bootstrap trajectories with a
   negative-binomial observation model.
 - **Ensemble** — per-quantile median (Vincentization) of the member quantiles, followed by
-  **conformal recalibration** of the tails (the single largest accuracy gain; see §7).
+  **conformal recalibration** of the tails (the single largest accuracy gain; see §8).
 
 Full methodology, per-fold analysis, and the WIS scale-dependence findings are in
 `reports/modeling_results_report.pdf` and the manuscript (`paper/imdc_paper.pdf`). Every step is
@@ -160,7 +173,7 @@ reproducible with `make reproduce`.
 
 ---
 
-## 6. How the EW‑25 data-availability rule was met
+## 7. How the EW‑25 data-availability rule was met
 
 The challenge requires that a forecast covering **EW 41 of the current year through EW 40 of the
 following year** use **only data available up to EW 25 of the current year**. We enforce this
@@ -187,7 +200,7 @@ mechanically, not by convention:
 
 ---
 
-## 7. How the prediction intervals were computed
+## 8. How the prediction intervals were computed
 
 Every forecast is a **full predictive distribution**: a median plus the required **50/80/90/95%
 central intervals**. Uncertainty is produced natively per model and then combined:
@@ -206,7 +219,7 @@ validated against the platform schema before upload (`src/imdc/submission/valida
 
 ---
 
-## 8. DOI references
+## 9. DOI references
 
 - Araujo EC, Carvalho LM, Coelho FC, et al. Leveraging probabilistic forecasts for dengue
   preparedness and control: The 2024 Dengue Forecasting Sprint in Brazil. *PNAS*

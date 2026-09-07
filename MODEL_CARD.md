@@ -60,7 +60,14 @@ All data are from the official IMDC 2026 repository and public sources (Infodeng
 ECMWF, DATASUS, Afya). No private or additional non-shared datasets were used. All inputs are
 redistributable within the challenge; the raw archive is included via Git LFS for reproduction.
 
-## 5. Model training
+## 5. Data usage restriction
+Only the official IMDC 2026 dataset, distributed via the challenge's FTP server (including its
+published `*_update_2026` increments used for the forecast-phase refresh), was used. Per the
+challenge's Data Usage Policy, any dataset not available via that FTP server or the Mosqlimate API
+would need to be submitted to the organizers for sharing with all participants; no such additional
+dataset was introduced anywhere in this pipeline.
+
+## 6. Model training
 Four submission tracks, best model chosen per track by fold-1 tuning + scale-free relative WIS:
 - **Dengue, state:** unweighted quantile-median **ensemble** of climatological, LightGBM, and GRU,
   with **conformal recalibration** of the tails (fold-1-tuned multiplicative widening factors,
@@ -75,11 +82,11 @@ Four submission tracks, best model chosen per track by fold-1 tuning + scale-fre
 - **Dengue/chikungunya, cities:** **climatological-quantile** model (geography-agnostic; strongest at city level).
 
 Training uses a synthetic-origin panel (weekly origins × horizons 1–67) with strict
-leakage-safe cutoff filtering (see §6). Backtests cover four seasons (2022–23 … 2025–26). LightGBM
+leakage-safe cutoff filtering (see §7). Backtests cover four seasons (2022–23 … 2025–26). LightGBM
 is deterministic (`seed=42`); the GRU is a 5-member deep ensemble. Full details in
 `reports/modeling_results_report.pdf`.
 
-## 6. Data-availability compliance (only data up to EW 25 used)
+## 7. Data-availability compliance (only data up to EW 25 used)
 The challenge requires that a forecast covering EW 41 of the current year through EW 40 of the
 following year use **only data available up to EW 25 of the current year**. We enforce this
 mechanically, not by convention:
@@ -103,7 +110,7 @@ mechanically, not by convention:
   origin to the latest observed date in the (EW-25-truncated) dataset, and all covariates pass
   through the same cutoff filters before the forecast horizon (EW 41 2026 → EW 40 2027) is produced.
 
-## 7. How the prediction intervals were computed
+## 8. How the prediction intervals were computed
 Every forecast is a full predictive distribution: a median plus the required 50/80/90/95% central
 intervals. Uncertainty is produced natively per model and then combined:
 - **Climatological** — empirical quantiles of historical same-epiweek incidence.
@@ -118,7 +125,7 @@ intervals. Uncertainty is produced natively per model and then combined:
 Interval nesting (50 ⊂ 80 ⊂ 90 ⊂ 95) and non-negativity are enforced, and every file is validated
 against the platform schema before upload (`src/imdc/submission/validate.py`).
 
-## 8. DOI references
+## 9. DOI references
 - Araujo EC, Carvalho LM, Coelho FC, et al. Leveraging probabilistic forecasts for dengue
   preparedness and control: The 2024 Dengue Forecasting Sprint in Brazil. *PNAS*
   123(7):e2508989123 (2026). DOI: [10.1073/pnas.2508989123](https://doi.org/10.1073/pnas.2508989123)
