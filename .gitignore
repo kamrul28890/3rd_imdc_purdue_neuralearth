@@ -30,3 +30,11 @@ prediction_upload.md
 # run logs (not results)
 results/metrics/*.log
 email_to_organizers.md
+
+# LaTeX build artifacts (pdflatex, not tectonic, leaves these behind)
+paper/*.aux
+paper/*.log
+paper/*.out
+reports/*.aux
+reports/*.log
+reports/*.out

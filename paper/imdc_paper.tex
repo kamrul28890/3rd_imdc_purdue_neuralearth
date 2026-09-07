@@ -72,7 +72,11 @@ accurate in ordinary seasons but failed badly during the 2024 outbreak, while a 
 that averages the models was the most dependable. We also found that the apparent winner changes
 depending on how performance is scored, a caution for forecasting leaderboards. Finally, a light
 statistical recalibration of the ensemble's uncertainty improved both accuracy and reliability, and
-adding more data or model complexity did not help. Our full pipeline is openly available.
+adding more data or model complexity did not help. At the challenge's own validation-round results
+presentation, our submission was independently named one of six best-overall-performing models (of
+27 submitted) for the mandatory state-level dengue target, and one of three models with outstanding
+performance on the optional city-level target \citep{imdc2026webinar}. Our full pipeline is openly
+available.
 
 \section{Introduction}
 Dengue is among the fastest-spreading mosquito-borne diseases, with an estimated 390 million
@@ -189,6 +193,34 @@ The deep network is best in ordinary seasons and worst on the 2024 outlier; the 
 every model's worst-season failure. The conformal-recalibrated ensemble (Section~\ref{sec:conformal})
 is shown alongside its members.}
 \label{fig:byfold}
+\end{figure}
+
+Season-to-season stability is a distinct axis from mean skill, and the two disagree for the models
+identified above. For each fold we compute each model's relative WIS against the seasonal-naive
+baseline (a fully-crossed pairwise comparison over state and horizon, Cramer et al. 2022), take its
+log so that a model twice as good and a model twice as bad are symmetric, and summarize the four
+folds by their mean (overall skill against the baseline, negative is better) and standard deviation
+(season-to-season consistency, lower is more stable). Fig~\ref{fig:stability} plots the two against
+each other. The deep network has the best mean skill of any model (log relative WIS $-0.54$) but
+also the highest variability of any model except naive ($0.20$), the quantitative signature of its
+ordinary-season strength and outlier-season failure. The mechanistic model sits at the opposite
+corner: modest mean skill ($-0.11$) but the lowest variability of any model ($0.03$), because its
+bootstrap of historical seasons widens intervals in proportion to historical variability rather than
+assuming a fixed noise scale. Both ensembles trade part of the deep network's mean skill for
+markedly better consistency (std $0.14$ and $0.11$ for the median and conformal ensembles), which is
+the quantitative counterpart of the qualitative claim above: an ensemble is not chosen for being the
+single best model in any one season, but for never being the worst.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.62\textwidth]{../results/figures/paper_stability.png}
+\caption{\textbf{Skill and season-to-season stability are distinct axes.} Each point is one model's
+mean log relative WIS against the seasonal-naive baseline across the four folds (x, negative is
+better) against the standard deviation of that same quantity (y, lower is more consistent). The deep
+network has the best mean skill but is among the least stable; the mechanistic model is the most
+stable but has only modest mean skill; the ensembles occupy an intermediate position that no single
+member reaches.}
+\label{fig:stability}
 \end{figure}
 
 \subsection{An ensemble is the most robust model, and conformal recalibration makes it the most
@@ -488,6 +520,57 @@ Chikungunya (10 cities) & Climatological & \textbf{32.2} & \textbf{0.87} & 54 \\
 \end{tabular}
 \end{table}
 
+\subsection{Onset, peak, and total burden are decision-relevant summaries that WIS does not
+directly show}\label{sec:operational}
+WIS scores every week of the season equally, but health-system planning asks three narrower
+questions: when will the season start, how large will the peak be, and how many cases will there
+be in total. We compute, per state-season unit, the error in the first week each series reaches 10
+percent of its own peak (onset), the timing and log-magnitude error at the true peak week (as in
+Section~\ref{sec:noseason}), and the log-ratio of predicted to observed total season cases
+(Table~\ref{tab:operational}). No model wins on every one of these summaries, which is the same
+qualitative pattern as the main WIS results but on a different, more directly interpretable set of
+outputs. The gradient-boosted model has the lowest onset-timing error (3.1 weeks mean absolute
+error, against 3.3 for the conformal ensemble), the climatological model has the lowest peak-timing
+error (4.4 weeks, against 4.6 for the ensemble), and the gradient-boosted model again gives the
+least biased total-season case count (8 percent under-prediction at the median unit, against 20
+percent for the ensemble and 55 percent for the mechanistic model). Every model under-predicts case
+counts at the true peak week specifically, by 46 to 76 percent at the median unit, more than it
+under-predicts the season total, which shows that the harder part of the forecasting problem is
+capturing acute intensity at the peak rather than accumulated burden over the season. The ensemble
+is a reasonable middle choice on every one of these summaries without being the best on any single
+one, consistent with it being chosen for robustness (Section~\ref{sec:noseason}) rather than for
+leading any one metric.
+
+\begin{table}[t]
+\centering\small
+\caption{\textbf{Onset, peak, and total-burden accuracy}, dengue state-level, four seasons and 26
+states (104 units). Onset and peak-week errors are mean absolute error in weeks. Peak magnitude and
+total cases are the median log(predicted / observed) at the true peak week and over the full season
+respectively; 0 is unbiased, negative is under-prediction. Best value in each column is in bold.}
+\label{tab:operational}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+\textbf{Model} & \textbf{Onset MAE} & \textbf{Peak-week MAE} & \textbf{Peak magnitude} & \textbf{Total cases} \\
+ & (weeks) & (weeks) & (log-ratio) & (log-ratio) \\
+\midrule
+Ensemble (conformal)   & 3.3 & 4.6 & $-0.73$ & $-0.22$ \\
+LightGBM               & \textbf{3.1} & 4.7 & \textbf{$-0.54$} & \textbf{$-0.08$} \\
+Climatological         & 3.6 & \textbf{4.4} & $-0.95$ & $-0.35$ \\
+GRU (deep learning)    & 3.9 & 5.2 & $-0.62$ & $-0.17$ \\
+Mechanistic            & 3.7 & 5.0 & $-1.43$ & $-0.77$ \\
+Seasonal-naive         & 3.7 & 4.6 & $-0.86$ & $-0.34$ \\
+Naive                  & 4.5 & 16.2 & $-1.01$ & $0.00^{*}$ \\
+\bottomrule
+\end{tabular}
+
+\smallskip
+\footnotesize $^{*}$Naive's total-cases figure is not genuine skill: carrying the last observed
+value forward for 52 weeks over- and under-predicts in roughly equal measure across the season, so
+early- and late-season errors cancel in the sum even though naive is the worst model by every other
+measure in this table, including a 16-week peak-timing error. It is a reminder that a single
+season-total number, like a single aggregate WIS, can look better than a model's real skill.
+\end{table}
+
 \section{Discussion}
 
 \subsection{Robustness under regime shift}
@@ -536,19 +619,28 @@ the coming season will be ordinary or extreme, this asymmetric protection is the
 The fourth backtest season is only partially resolved in the available data and is reported
 separately; its numbers will firm up as the 2025--26 season completes. Municipality-to-state
 aggregation discards sub-state epidemic asynchrony that a municipal model could exploit. The study
-covers two diseases in one country and is retrospective; a true prospective evaluation awaits the
-challenge's forecast phase. The comparison is single-team, so it does not capture the full diversity
+covers two diseases in one country and is retrospective; we submitted the recalibrated ensemble to
+the challenge's forecast phase (the true 2026--27 season, EW41 2026 through EW40 2027) ahead of its
+2026-09-10 deadline, but a genuine prospective score awaits that season's resolution. The comparison
+is single-team, so it does not capture the full diversity
 of approaches a multi-team sprint would, and the conformal factors are calibrated on one season under
 the challenge's tuning-fold discipline rather than by a fully online procedure.
 
 \subsection{Future work}
-The immediate next step is the challenge forecast phase, which will provide a genuine prospective
-score for the recalibrated ensemble on the 2026--27 season. Beyond it, three directions follow from
-our results: a Bayesian spatiotemporal or endemic-epidemic member with a distributed-lag non-linear
-climate response \citep{held2005,meyer2017}, which our negative result suggests is the right home for
-climate covariates; hierarchical
-reconciliation across state, city, and national forecasts for coherence; and municipal-level feature
-engineering for the optional city tracks.
+The immediate next step is scoring the submitted forecast phase once the 2026--27 season resolves,
+which will provide a genuine prospective test of the recalibrated ensemble. Beyond it, four
+directions follow from our results and from the challenge organizers' own stated plans. First, a
+Bayesian spatiotemporal or endemic-epidemic member with a distributed-lag non-linear climate
+response \citep{held2005,meyer2017}, which our negative result suggests is the right home for
+climate covariates. Second, hierarchical reconciliation across state, city, and national forecasts
+for coherence. Third, municipal-level feature engineering for the optional city tracks. Fourth, the
+organizers report moving their own collective ensemble toward a copula-based approach that samples
+coherent full-trajectory epidemic curves rather than combining marginal per-week quantiles
+independently; our per-quantile median ensemble does not guarantee this, but our mechanistic
+model's bootstrap of complete historical trajectories already provides trajectory-level coherence by
+construction, which is a reason to prefer it, or a copula-linked resampling of it, over a purely
+per-week combination when coherent full-season trajectories rather than marginal weekly intervals
+are the target.
 
 \section{Materials and methods}\label{sec:methods}
 
@@ -618,8 +710,9 @@ quantile of $r$, a scale-free, multiplicative analogue of conformalized quantile
 robust to the large cross-state differences in scale. The interval is then widened about the median
 by $s_L$, and monotonicity across quantiles is restored by a rearrangement step. Factors are estimated
 on the tuning season and applied to all seasons; recalibrating the ensemble output outperforms
-recalibrating any single member. For the forecast phase, the factors are to be estimated on all four
-validation seasons and applied to the prospective forecast.
+recalibrating any single member. The same frozen, fold-1-derived factors are reused unchanged for the
+forecast phase, consistent with fitting recalibration weights only once and never on the season being
+forecast.
 
 \subsection{Reproducibility}
 All code, the backtesting harness, per-state scored predictions, and validated submission files for
@@ -687,6 +780,7 @@ Mosqlimate teams for curating and distributing the data.
 \bibitem{zaffran2022} Zaffran M, F\'eron O, Goude Y, Josse J, Dieuleveut A. Adaptive conformal predictions for time series. \emph{Proc 39th Int Conf Machine Learning (PMLR)} 162 (2022).
 \bibitem{held2005} Held L, H\"ohle M, Hofmann M. A statistical framework for the analysis of multivariate infectious disease surveillance counts. \emph{Stat Model} 5(3):187--199 (2005).
 \bibitem{meyer2017} Meyer S, Held L, H\"ohle M. Spatio-temporal analysis of epidemic phenomena using the R package surveillance. \emph{J Stat Softw} 77(11):1--55 (2017).
+\bibitem{imdc2026webinar} Infodengue-Mosqlimate Dengue Challenge. IMDC 2026 Validation Round: First-Phase Results (webinar). 31 July 2026. \url{https://www.youtube.com/watch?v=m96WaySHznw}.
 \end{thebibliography}
 
 \end{document}

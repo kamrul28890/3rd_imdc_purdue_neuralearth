@@ -5,6 +5,7 @@ Run as: python scripts/make_figures.py
 Figures written to results/figures/:
   paper_wis_by_fold.png    mean WIS by model and season (log), including the conformal ensemble
   paper_coverage.png       interval calibration by model
+  paper_stability.png      skill (mean log relative WIS) vs season-to-season stability (its std-dev)
   paper_relative_wis.png   metric-disagreement slope chart (mean WIS vs normalized WIS)
 """
 import os
@@ -16,6 +17,9 @@ import numpy as np
 import pandas as pd
 
 from imdc.config import FIGURES_DIR, METRICS_DIR
+from imdc.evaluation.metrics import relative_wis
+
+STABILITY_BASELINE = "seasonal_naive"
 
 INK, MUTED, GRID = "#0b0b0b", "#898781", "#e1e0d9"
 C = {"naive": "#b8b6ae", "seasonal_naive": "#eda100", "climatological_quantile": "#2a78d6",
@@ -78,6 +82,41 @@ def _coverage(df):
     plt.close()
 
 
+def _stability(df):
+    """Mean vs. std-dev of log(relative WIS to seasonal-naive) across the 4 folds.
+
+    Each fold's relative WIS is a fully-crossed pairwise comparison (Cramer et al. 2022)
+    over (uf, horizon_weeks), scale-free within that fold; taking the log makes a model
+    twice as good and a model twice as bad symmetric distances from 0. Mean log(rw) across
+    folds is overall skill vs. baseline (negative = better); its std-dev is season-to-season
+    consistency (lower = more stable) - the axis a single mean-WIS table cannot show.
+    """
+    records = []
+    for f in sorted(df["fold_id"].dropna().unique()):
+        sub = df[df["fold_id"] == f]
+        rw = relative_wis(sub, baseline_model=STABILITY_BASELINE, group_cols=["uf", "horizon_weeks"])
+        records += [{"model": m, "log_rw": np.log(v)} for m, v in rw.items()]
+    stats = pd.DataFrame(records).groupby("model")["log_rw"].agg(["mean", "std"])
+
+    fig, ax = plt.subplots(figsize=(6.5, 6))
+    for m in ORDER:
+        if m not in stats.index or m == STABILITY_BASELINE:
+            continue
+        ax.scatter(stats.loc[m, "mean"], stats.loc[m, "std"], color=C[m], s=70, zorder=3)
+        ax.annotate(LAB[m], (stats.loc[m, "mean"], stats.loc[m, "std"]), fontsize=9,
+                    xytext=(6, 4), textcoords="offset points", color=C[m])
+    ax.axvline(0, color=MUTED, ls="--", lw=1)
+    ax.set_xlabel("Mean log(relative WIS vs. seasonal-naive), across folds\n(negative = better than baseline)")
+    ax.set_ylabel("Std. dev. of log(relative WIS) across folds\n(lower = more consistent)")
+    ax.set_title("Skill and season-to-season stability", loc="left", fontsize=12)
+    for s in ["top", "right"]:
+        ax.spines[s].set_visible(False)
+    ax.grid(lw=0.5)
+    plt.tight_layout()
+    plt.savefig(FIGURES_DIR / "paper_stability.png", dpi=150, bbox_inches="tight")
+    plt.close()
+
+
 def _metric_disagreement(df):
     """Slope chart: model rank by magnitude-weighted mean WIS (all seasons) vs by
     normalized WIS on the ordinary seasons. Lines that cross show the reordering."""
@@ -115,8 +154,9 @@ def main():
         df[c] = pd.to_numeric(df[c], errors="coerce")
     _wis_by_fold(df)
     _coverage(df)
+    _stability(df)
     _metric_disagreement(df)
-    print("Wrote paper_wis_by_fold.png, paper_coverage.png, paper_relative_wis.png")
+    print("Wrote paper_wis_by_fold.png, paper_coverage.png, paper_stability.png, paper_relative_wis.png")
 
 
 if __name__ == "__main__":

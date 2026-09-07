@@ -7,10 +7,12 @@ from imdc.evaluation.metrics import (
     coverage,
     interval_score,
     mase,
+    onset_week_error,
     peak_magnitude_error,
     peak_timing_error,
     pinball_loss,
     relative_wis,
+    total_cases_error,
     wis_decomposition,
     wis_from_intervals,
     wis_from_quantiles,
@@ -148,6 +150,24 @@ class TestPeakErrors:
         # at the true peak week (idx 2), predicted value is 3, observed peak is 10
         mag = peak_magnitude_error(pred_median, observed)
         assert mag == pytest.approx(np.log(3 / 10))
+
+    def test_onset_week_error_on_shifted_onset(self):
+        # observed crosses 10% of its peak (10 -> threshold 1) at index 1; pred crosses at index 2
+        observed = pd.Series([0, 2, 10, 3, 1])
+        pred_median = pd.Series([0, 0, 2, 10, 1])
+        assert onset_week_error(pred_median, observed) == pytest.approx(1.0)
+
+    def test_onset_week_error_nan_on_flat_series(self):
+        flat = pd.Series([0, 0, 0, 0, 0])
+        other = pd.Series([0, 2, 10, 3, 1])
+        assert np.isnan(onset_week_error(flat, other))
+
+    def test_total_cases_error_matches_log_ratio(self):
+        observed = pd.Series([1, 2, 10, 3, 1])  # sum 17
+        pred_median = pd.Series([2, 2, 8, 4, 1])  # sum 17
+        assert total_cases_error(pred_median, observed) == pytest.approx(0.0)
+        double = pred_median * 2  # sum 34, exactly double
+        assert total_cases_error(double, observed) == pytest.approx(np.log(2))
 
 
 class TestRelativeWis:

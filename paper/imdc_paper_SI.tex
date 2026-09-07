@@ -252,4 +252,23 @@ reported number, and the per-state scored predictions for all models are release
 figure can be regenerated. Validated submission files for the four official tracks (dengue and
 chikungunya, at state and city level) are included.
 
+\section*{S8 Text. Per-state model performance heatmap}
+Table-based per-state comparisons do not scale to six models across 26 states. Fig~S6 gives the
+same comparison as a heatmap: each cell is one model's mean log relative WIS against the
+seasonal-naive baseline in one state, averaged over the four seasons, the same quantity underlying
+the stability figure in the main text (Fig 3) but broken out by state instead of collapsed to a
+mean and standard deviation. Green cells are better than the baseline and red cells are worse. Two
+patterns are visible beyond the aggregate numbers already reported: the deep network's advantage is
+concentrated in a subset of states (Ceara and Rio de Janeiro most strongly) rather than uniform, and
+the gradient-boosted model is the only one of the six with states that are red, meaning worse than
+the seasonal-naive baseline (Amapa, Paraiba, Pernambuco), which the state-level aggregate in
+Table 1 does not show.
+
+\begin{figure}[t]\centering
+\includegraphics[width=\textwidth]{../results/figures/paper_state_heatmap.png}
+\caption{\textbf{S6 Fig. Per-state skill relative to the seasonal-naive baseline.} Mean log
+relative WIS by model and state, averaged over the four seasons. Green is better than baseline, red
+is worse.}
+\end{figure}
+
 \end{document}

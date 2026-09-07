@@ -159,6 +159,47 @@ def peak_magnitude_error(pred_median: pd.Series, observed: pd.Series) -> float:
     return float(np.log(pred_at_true_peak / obs_peak))
 
 
+def _first_onset_index(series: pd.Series, threshold_frac: float) -> "int | None":
+    """First index whose value reaches `threshold_frac` of that series' own peak, or None if flat."""
+    arr = series.to_numpy()
+    peak = arr.max()
+    if peak < _EPS:
+        return None
+    reached = arr >= threshold_frac * peak
+    if not reached.any():
+        return None
+    return int(np.argmax(reached))
+
+
+def onset_week_error(pred_median: pd.Series, observed: pd.Series, threshold_frac: float = 0.1) -> float:
+    """argmax_week(pred onset) - argmax_week(observed onset), in index positions (weeks).
+
+    Onset is the first week reaching `threshold_frac` of that series' own peak - scale-free per
+    series (robust to per-state/per-season incidence magnitude), analogous in spirit to
+    `peak_timing_error` but for epidemic start rather than epidemic peak. NaN if either series
+    never reaches the threshold (e.g. a flat all-zero series).
+    """
+    pred_onset = _first_onset_index(pred_median, threshold_frac)
+    obs_onset = _first_onset_index(observed, threshold_frac)
+    if pred_onset is None or obs_onset is None:
+        return float("nan")
+    return float(pred_onset - obs_onset)
+
+
+def total_cases_error(pred_median: pd.Series, observed: pd.Series) -> float:
+    """log(sum(pred_median) / sum(observed)) over the full series - total-season case count error.
+
+    Zero is a perfect total; negative is under-prediction, positive is over-prediction. Same
+    log-ratio convention as `peak_magnitude_error`, applied to the season total rather than the
+    peak week, since total burden (not just the peak) is what health-system planning needs.
+    """
+    obs_total = observed.to_numpy().sum()
+    pred_total = pred_median.to_numpy().sum()
+    if obs_total < _EPS or pred_total < _EPS:
+        return float("nan")
+    return float(np.log(pred_total / obs_total))
+
+
 def relative_wis(scored_long: pd.DataFrame, baseline_model: str, group_cols: list) -> pd.Series:
     """Pairwise-comparison relative WIS (Cramer et al. 2022), scaled to baseline_model=1.0.
 
