@@ -48,6 +48,11 @@ led the supporting data/validation and writing/documentation streams.
 - **Eashraque Jahan Easha** — investigation (literature review), validation, visualization,
   writing (review & editing).
 
+**AI usage:** Development of the analysis pipeline, statistical methods, code, and portions of the
+manuscript was assisted by Claude (Anthropic), an AI assistant, under the direction and review of
+the human authors. All methodological decisions, interpretations, and conclusions are the
+responsibility of the human authors, who reviewed and verified the code, analyses, and results.
+
 ---
 
 ## 2. Repository structure

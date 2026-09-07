@@ -45,8 +45,17 @@ mean pinball loss over the nine quantiles up to the constant weighting, the exac
 approximation to the continuous ranked probability score. We verified our implementation against the
 challenge platform's own scorer to machine precision on a shared set of forecasts, and against a
 hand-computed toy case that caught an early normalization error (division by $9$ rather than
-$K+\tfrac12 = 4.5$). Alongside mean WIS we report: empirical interval coverage; a decomposition of WIS
-into a dispersion term and directional over- and under-prediction penalties; a per-unit relative WIS
+$K+\tfrac12 = 4.5$): for median $m=10$, a 50 percent interval $[6,14]$, a 90 percent interval
+$[2,20]$, and $y=15$, the median term is $0.5|15-10|=2.5$; $\mathrm{IS}_{0.5}=(14-6)+\tfrac{2}{0.5}
+(15-14)=12$, weighted by $\alpha/2=0.25$ to $3$; $\mathrm{IS}_{0.1}=(20-2)=18$ (not exceeded, so no
+penalty term), weighted by $0.05$ to $0.9$; giving $\mathrm{WIS}=(2.5+3+0.9)/(2+0.5)=2.56$ for this
+$K=2$ toy case (the full score uses all four official intervals, $K=4$). This score decomposes
+exactly into three non-negative components: a dispersion term (the interval-width contribution,
+present even when the median is exactly correct), an under-prediction penalty (positive only when
+$y$ exceeds the interval's upper bound), and an over-prediction penalty (positive only when $y$ falls
+below the lower bound); their sum is bit-for-bit equal to WIS by construction, which we also test.
+Alongside mean WIS we report: empirical interval coverage; that dispersion/under-prediction/
+over-prediction decomposition of WIS; a per-unit relative WIS
 that scores each state-season-horizon against the naive baseline and takes a geometric mean, which
 weights every unit equally; and the normalized WIS, the sum of WIS divided by the sum of observed
 cases, which is the challenge's headline metric and is scale-free across regions.
@@ -270,5 +279,63 @@ Table 1 does not show.
 relative WIS by model and state, averaged over the four seasons. Green is better than baseline, red
 is worse.}
 \end{figure}
+
+\section*{S9 Text. Glossary}
+Terms used throughout the main text and this document, in order of first appearance.
+
+\begin{itemize}
+\item \textbf{WIS (weighted interval score)} — the challenge's scoring rule for a probabilistic
+forecast; combines median accuracy with interval width and coverage into one number, lower is
+better (S1 Text gives the formula and a worked example).
+\item \textbf{Coverage (nominal vs.\ empirical)} — nominal coverage is an interval's stated
+probability (e.g.\ 90 percent for the 90 percent interval); empirical coverage is the fraction of
+observations it actually contained. A well-calibrated model has the two close together.
+\item \textbf{Sharpness} — how narrow, and therefore informative, a model's prediction intervals
+are, independent of whether they are well calibrated.
+\item \textbf{Dispersion, under-prediction, over-prediction (WIS components)} — the three
+non-negative pieces WIS decomposes into: dispersion is the interval-width penalty present even for
+a perfectly centered forecast; the other two are penalties for the observation falling above or
+below the stated interval.
+\item \textbf{Relative WIS} — one model's WIS divided by a baseline model's WIS on the same
+forecasting units, a pairwise comparison (Cramer et al.\ 2022) that removes shared, unit-level
+variance; we report its logarithm so a model twice as good and twice as bad are symmetric.
+\item \textbf{Normalized WIS} — the sum of WIS divided by the sum of observed cases; scale-free
+across states/cities of very different size, and the challenge's own headline metric.
+\item \textbf{Vincentization} — combining several models' forecasts by taking, at every quantile
+level separately, the median of the models' values at that level.
+\item \textbf{Conformalized quantile regression (CQR)} — calibrating one model's own quantile
+predictions, during fitting, by measuring on held-out data how much each quantile needs to shift to
+reach its nominal coverage.
+\item \textbf{Conformal recalibration (this paper's ensemble-level step)} — a separate,
+after-the-fact widening of the already-combined ensemble's intervals, by a multiplicative factor per
+interval level tuned on one season and reused unchanged thereafter; distinct from CQR, which
+calibrates one model during fitting rather than the combined ensemble afterward.
+\item \textbf{Synthetic-origin panel} — the training set built for LightGBM/GRU: every historical
+week within a fold's cutoff-filtered history becomes a candidate forecast origin, crossed with
+horizons 1--67 weeks ahead, so a handful of true evaluation windows becomes tens of thousands of
+training rows.
+\item \textbf{Block bootstrap} — a resampling technique that repeatedly draws whole state-season
+units (not individual weeks) with replacement to estimate how much a summary statistic (e.g.\
+normalized WIS) would vary under the data's actual dependence structure.
+\item \textbf{Paired comparison} — comparing two models' scores on the exact same forecasting units
+and looking at the difference, rather than comparing their two separate score distributions; cancels
+variance that is common to both models (e.g.\ from an unusually hard season).
+\item \textbf{Negative-binomial (head/distribution)} — a count-data distribution more flexible than
+Poisson, allowing variance to exceed the mean, as case-count data typically do; the GRU's output
+layer and the mechanistic model's observation model both use it.
+\item \textbf{Richards curve} — a flexible, S-shaped growth-then-plateau curve classically used to
+summarize an epidemic's rise and fall over a season; the mechanistic model fits one per historical
+season and resamples from these fits to build future trajectories.
+\item \textbf{Distributed-lag non-linear model (DLNM)} — a modeling structure that lets a
+covariate's effect on the outcome be both delayed (this week's climate affecting cases several
+weeks later) and non-linear in the covariate's own value.
+\item \textbf{Empirical-Bayes pooling (shrinkage)} — partially pulling each unit's (e.g.\ each
+state's) own estimate toward a shared average across a group of units, to borrow statistical
+strength when individual units are noisy.
+\item \textbf{Onset week, peak week/magnitude, total cases (operational summaries)} — decision-relevant
+quantities WIS does not directly show: the first week a series reaches a fraction of its own peak;
+the timing and size of the true peak week; and the season's total case count; each reported as an
+error relative to the true value (Results Section~2.11 of the main text).
+\end{itemize}
 
 \end{document}
