@@ -15,7 +15,7 @@ from imdc.evaluation.harness import build_state_training_frame
 from imdc.evaluation.postprocess import enforce_monotonicity, to_submission_wide
 from imdc.submission.build import season_date_range
 
-FOLD_SEASON = {1: 2023, 2: 2024, 3: 2025, 4: 2026}
+FOLD_SEASON = {1: 2023, 2: 2024, 3: 2025, 4: 2026, 5: 2027}
 
 
 def _full_season_grid(fold, season_year: int, geographies: list) -> pd.DataFrame:

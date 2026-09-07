@@ -62,7 +62,15 @@ redistributable within the challenge; the raw archive is included via Git LFS fo
 
 ## 5. Model training
 Four submission tracks, best model chosen per track by fold-1 tuning + scale-free relative WIS:
-- **Dengue, state:** unweighted quantile-median **ensemble** of climatological, LightGBM, and GRU.
+- **Dengue, state:** unweighted quantile-median **ensemble** of climatological, LightGBM, and GRU,
+  with **conformal recalibration** of the tails (fold-1-tuned multiplicative widening factors,
+  `results/metrics/conformal_factors.csv`) — the best-evaluated configuration (WIS 1216 vs. 1281
+  for the plain ensemble; see Results). **Note on what was actually submitted:** the validation-phase
+  (fold 1–4, seasons 2022–23…2025–26) submission used the plain ensemble *without* this
+  recalibration step — an oversight caught after that phase closed, documented rather than
+  silently corrected on an already-presented submission (see `docs/IMPROVEMENTS.md`). It is applied
+  starting with the forecast-phase (2026–27) submission, generated via
+  `scripts/generate_forecast_2026_27.py`.
 - **Chikungunya, state:** **LightGBM** quantile regression (dominates every fold; ensemble dilutes it).
 - **Dengue/chikungunya, cities:** **climatological-quantile** model (geography-agnostic; strongest at city level).
 

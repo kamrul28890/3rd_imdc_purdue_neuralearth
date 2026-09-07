@@ -22,7 +22,7 @@ from imdc.submission.build import season_date_range
 from imdc.submission.upload import git_commit_hash
 
 REPO = "kamrul28890/3rd_imdc_purdue_neuralearth"
-SEASONS = [2023, 2024, 2025, 2026]
+SEASONS = [2023, 2024, 2025, 2026, 2027]  # 2027 = the real forecast-phase submission (EW41 2026 -> EW40 2027)
 
 # (track subdir, disease, adm_level, geographies)
 TRACKS = [

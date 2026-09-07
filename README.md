@@ -129,6 +129,15 @@ relative WIS:
 | **Chikungunya, state** | **LightGBM** quantile regression (dominates every fold; the ensemble dilutes it) |
 | **Dengue / chikungunya, cities** | **Climatological-quantile** model (geography-agnostic; strongest at city level) |
 
+> **What was actually submitted for validation vs. now.** The dengue-state conformal
+> recalibration step above was implemented and evaluated (it's what produces the Results table's
+> "Ensemble + conformal recalibration" row) but was not wired into the script that generated the
+> actual validation-phase submission (fold 1–4, seasons 2022–23…2025–26) — that submission used
+> the plain ensemble instead. Caught after the validation phase closed and its results webinar
+> (2026-07-31) had already run, so it's documented here rather than corrected on an
+> already-presented submission. It **is** applied to the forecast-phase (2026–27) submission via
+> `scripts/generate_forecast_2026_27.py`. See `MODEL_CARD.md` §5 and `docs/IMPROVEMENTS.md`.
+
 **Training design.** All models train on a **synthetic-origin panel** (weekly forecast origins ×
 horizons 1–67 weeks) with strict leakage-safe cutoff filtering (see §6). Backtests cover the four
 official validation seasons (2022–23, 2023–24, 2024–25, 2025–26).
@@ -289,7 +298,9 @@ bit-reproducible on CPU, so the committed `gru_scored.csv` is canonical. (2) One
 | 8. Manuscript | 🟡 Draft |
 | Optional tracks (chik-state, dengue/chik cities) | ✅ Done |
 
-- **Validation phase (4 backtest folds):** ✅ submitted (model id 83).
-- **Forecast phase (2026–27 season):** due **2026-09-10**. The committed raw data must be re-pulled
-  through EW 25 2026 before generating the true forecast; the same leakage-safe machinery (§6) then
-  produces the EW 41 2026 → EW 40 2027 horizon.
+- **Validation phase (4 backtest folds):** ✅ submitted (model id 83). See the note in §5 above on
+  a conformal-recalibration gap between the documented and actually-submitted dengue-state model.
+- **Forecast phase (2026–27 season):** due **2026-09-10**. Raw data re-pulled through EW 25 2026
+  (`scripts/refresh_data.py`) and population extrapolated to 2026/2027 (`scripts/extrapolate_population.py`).
+  All 77 forecast files generated and locally validated (`scripts/generate_forecast_2026_27.py`);
+  upload pending (`scripts/finish_upload.py`, needs `MOSQLIMATE_API_KEY` in `.env`).

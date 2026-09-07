@@ -37,7 +37,8 @@ def write_checksums() -> list:
             continue
         rows.append((sha256(p), p.name, p.stat().st_size))
     out = RAW / "CHECKSUMS.sha256"
-    out.write_text("\n".join(f"{h}  {name}  ({size} bytes)" for h, name, size in rows) + "\n")
+    out.write_text("\n".join(f"{h}  {name}  ({size} bytes)" for h, name, size in rows) + "\n",
+                   encoding="utf-8")
     return rows
 
 
@@ -72,7 +73,7 @@ def main():
     md.append(_leaderboard_md(METRICS / "final_leaderboard.csv", "Dengue, state level (mean WIS)"))
     md.append(_leaderboard_md(METRICS / "chik_final_leaderboard.csv", "Chikungunya, state level (mean WIS)"))
 
-    (ROOT / "RESULTS.md").write_text("\n".join(md))
+    (ROOT / "RESULTS.md").write_text("\n".join(md), encoding="utf-8")
     print(f"Wrote CHECKSUMS.sha256 ({len(rows)} files), data fingerprint {combined_hash}, and RESULTS.md")
 
 

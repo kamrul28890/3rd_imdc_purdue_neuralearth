@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 
 from imdc.config import QUANTILE_COLUMNS
-from imdc.evaluation.postprocess import apply_conformal_widen, conformal_widen_factors
+from imdc.evaluation.postprocess import apply_conformal_widen, clip_nonnegative, conformal_widen_factors
 
 LEVELS = [50, 80, 90, 95]
 
@@ -47,3 +47,19 @@ def test_widening_restores_nominal_coverage_in_sample():
         cov = float(((y >= out[f"lower_{level}"]) & (y <= out[f"upper_{level}"])).mean())
         assert before[level] < level / 100                   # started overconfident
         assert cov == pytest.approx(level / 100, abs=0.03)   # recalibrated to nominal
+
+
+def test_clip_nonnegative_floors_at_zero_and_stays_monotone():
+    # A widening factor > 1 on a small pred can push a lower bound negative (real case:
+    # the fitted 95% conformal factor is ~1.73) - clip_nonnegative must floor it at 0
+    # without breaking the nesting that apply_conformal_widen already established.
+    wide = pd.DataFrame([{
+        "pred": 1.0,
+        "lower_50": 0.5, "upper_50": 1.5, "lower_80": -1.0, "upper_80": 3.0,
+        "lower_90": -3.0, "upper_90": 5.0, "lower_95": -6.0, "upper_95": 8.0,
+    }])
+    out = clip_nonnegative(wide)
+    vals = out[QUANTILE_COLUMNS].iloc[0].to_numpy(dtype=float)
+    assert vals.min() == 0.0
+    assert out["upper_95"].iloc[0] == 8.0   # positive values untouched
+    assert np.all(np.diff(vals) >= 0)       # still nested after clipping

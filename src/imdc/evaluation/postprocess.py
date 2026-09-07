@@ -69,7 +69,12 @@ def apply_conformal_widen(
     """Widen each central interval about the median by its factor; re-nest for monotonicity.
 
     Point forecast (`pred`) is unchanged. `enforce_monotonicity` repairs any crossing that
-    unequal per-level factors could introduce.
+    unequal per-level factors could introduce. Note: a widening factor > 1 (e.g. the fitted
+    95% factor of ~1.73, see docs/PLAN.md Phase 6) can push a lower bound below zero for
+    small-count states/cities - callers building an actual submission (where values are
+    non-negative case counts) should follow this with `clip_nonnegative`; left out of this
+    function itself since it is domain-agnostic (also used for generic calibration/scoring
+    where negative values are legitimate, see tests/test_postprocess.py).
     """
     out = preds_wide.copy()
     p = out["pred"].to_numpy(dtype=float)
@@ -78,6 +83,18 @@ def apply_conformal_widen(
         out[f"upper_{level}"] = p + s * (out[f"upper_{level}"].to_numpy(dtype=float) - p)
         out[f"lower_{level}"] = p - s * (p - out[f"lower_{level}"].to_numpy(dtype=float))
     return enforce_monotonicity(out)
+
+
+def clip_nonnegative(df: pd.DataFrame, columns: list = QUANTILE_COLUMNS) -> pd.DataFrame:
+    """Clip quantile columns to >= 0. Preserves monotonicity (clipping is order-preserving).
+
+    Required before any submission is validated (the platform rejects negative values) but
+    not folded into `apply_conformal_widen`/`enforce_monotonicity` since those are also used
+    for generic scoring/calibration on data where negative values are legitimate.
+    """
+    out = df.copy()
+    out[columns] = out[columns].clip(lower=0.0)
+    return out
 
 
 def to_submission_wide(
