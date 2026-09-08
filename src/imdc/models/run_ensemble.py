@@ -22,13 +22,24 @@ CALIB_FOLD = 1
 # as a single-model comparison but deliberately excluded from the ensemble: adding it hurts
 # both the fold-1 score and the relative-WIS on the headline folds (it is strong on raw mean
 # only because of the outlier fold's magnitude).
-MEMBERS = ["climatological_quantile", "lgbm_quantile", "gru_negbin"]
+#
+# 2026-09-08: lgbm_quantile -> xgb_quantile. Found during an overnight model sweep (see
+# docs/FUTURE_WORK.md Sec 6c) that XGBoost's native multi-quantile objective, on the identical
+# feature set, is a clean win as a drop-in replacement for LightGBM: better on fold 1 (the
+# tuning fold - wis 337.3 vs 340.8, nWIS 0.306 vs 0.309) AND on the full-aggregate metrics
+# (wis 1162.2 vs 1173.4, normWIS_all 0.561 vs 0.566, normWIS_ex2024 0.375 vs 0.381) - a genuine
+# single-substitution improvement validated under the same tuning-fold discipline as every other
+# ensemble-composition decision here, not a search artifact (contrast with several other overnight
+# findings that looked good on aggregate metrics but failed the fold-1 check). lgbm_quantile is
+# still loaded below for the leaderboard's own comparison table.
+MEMBERS = ["climatological_quantile", "xgb_quantile", "gru_negbin"]
 SCORE_COLS = ["wis", "coverage_50", "coverage_80", "coverage_90", "coverage_95"]
 
 
 def _load_all():
     frames = []
-    for f in ["baselines_scored.csv", "lgbm_scored.csv", "gru_scored.csv", "mechanistic_scored.csv"]:
+    for f in ["baselines_scored.csv", "lgbm_scored.csv", "xgb_scored.csv", "gru_scored.csv",
+              "mechanistic_scored.csv"]:
         p = METRICS_DIR / f
         if p.exists():
             frames.append(pd.read_csv(p, parse_dates=["date", "origin_date"]))

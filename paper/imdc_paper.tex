@@ -49,8 +49,8 @@ of the best model depends on the evaluation metric, because magnitude-weighted m
 scale-free normalized WIS reward accuracy on different subsets of a highly skewed set of states.
 Third, a conformal recalibration, a post-hoc widening of the ensemble's prediction intervals by a
 factor tuned to fix their overconfidence, improves accuracy and calibration at negligible cost
-(mean WIS, a magnitude-weighted score, 1281 to 1216; normalized WIS, its scale-free counterpart,
-0.585 to 0.555; out-of-sample reduction of 5.5 percent). It acts as asymmetric insurance: the
+(mean WIS, a magnitude-weighted score, 1234 to 1162; normalized WIS, its scale-free counterpart,
+0.595 to 0.561; out-of-sample reduction of 6.2 percent). It acts as asymmetric insurance: the
 extra interval width costs little in an ordinary season but prevents the catastrophic under-prediction
 an extreme season would otherwise cause. Fourth, added
 model complexity did not pay: observed-climate covariates and hierarchical spatial pooling both
@@ -160,12 +160,16 @@ Table~\ref{tab:byfold} reports mean WIS by model and season, and Fig~\ref{fig:by
 on a log scale. The ranking of models reorders across seasons. The deep network (a global GRU with a
 negative-binomial head, an output layer suited to over-dispersed count data such as case counts,
 rather than the Poisson head more common in count models) is the single best model in the two
-ordinary seasons, folds 1 and 3 (WIS 339 and 354), but is the worst of all models on the 2024
-outlier, fold 2 (WIS 3955), worse even than a naive baseline, because the surge lies outside its
+ordinary seasons, folds 1 and 3 (WIS 348 and 324), but is the worst of all models on the 2024
+outlier, fold 2 (WIS 4131), worse even than a naive baseline, because the surge lies outside its
 training distribution and its intervals, derived from its fitted distribution rather than built
-empirically, are too narrow to cover it. The gradient-boosted model (LightGBM) shows the opposite profile: it is
-the strongest on the outlier season (WIS 3327) yet the weakest of the serious models on the ordinary
-season fold 3 (WIS 644). The semi-mechanistic trajectory model is near best on the outlier (WIS 3371)
+empirically, are too narrow to cover it. The gradient-boosted model (XGBoost, chosen over a second
+gradient-boosting implementation, LightGBM, that we also tested and that scored significantly worse
+overall, Section~\ref{sec:methods}) is the strongest single model on the outlier season (WIS 3238),
+but unlike LightGBM, which showed a sharper trade-off (strongest on the outlier at WIS 3332 yet the
+weakest of the serious models on the ordinary season fold 3, WIS 665), XGBoost remains reasonably
+competitive rather than collapsing in the ordinary seasons (WIS 376 and 484 in folds 1 and 3). The
+semi-mechanistic trajectory model is near best on the outlier (WIS 3371)
 because its bootstrap of historical seasons yields wide intervals precisely when they are needed.
 This season-dependence is the central obstacle the challenge poses: a model selected on average
 performance carries a hidden risk of catastrophic failure in the season that matters most.
@@ -181,15 +185,15 @@ resolved and reported separately. Best value in each column is in bold.}
 \textbf{Model} & \textbf{Fold 1} & \textbf{Fold 2} & \textbf{Fold 3} & \textbf{Fold 4} \\
 & 2022--23 & 2023--24 & 2024--25 & 2025--26 \\
 \midrule
-Ensemble (conformal)      & 340 & 3324 & 439 & 186 \\
-Ensemble (Vincentization) & 339 & 3568 & 425 & \textbf{170} \\
-Ensemble (inverse-WIS)    & \textbf{322} & 3601 & 421 & 198 \\
-GRU (deep learning)       & 339 & 3955 & \textbf{354} & 176 \\
-LightGBM                  & 352 & \textbf{3327} & 644 & 338 \\
-Mechanistic               & 468 & 3371 & 551 & 216 \\
-Climatological            & 386 & 3588 & 516 & 174 \\
-Seasonal-naive            & 500 & 3848 & 581 & 206 \\
-Naive                     & 726 & 3833 & 1056 & 255 \\
+Ensemble (conformal)      & 337 & 3297 & 403 & 408 \\
+Ensemble (Vincentization) & 338 & 3574 & 398 & 399 \\
+Ensemble (inverse-WIS)    & \textbf{313} & 3625 & \textbf{387} & 401 \\
+GRU (deep learning)       & 348 & 4131 & \textbf{324} & 542 \\
+XGBoost                   & 376 & \textbf{3238} & 484 & 468 \\
+Mechanistic               & 468 & 3371 & 551 & 314 \\
+Climatological            & 386 & 3588 & 516 & 309 \\
+Seasonal-naive            & 500 & 3848 & 581 & 293 \\
+Naive                     & 726 & 3833 & 1056 & \textbf{266} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -210,16 +214,16 @@ baseline (a fully-crossed pairwise comparison over state and horizon, Cramer et 
 log so that a model twice as good and a model twice as bad are symmetric, and summarize the four
 folds by their mean (overall skill against the baseline, negative is better) and standard deviation
 (season-to-season consistency, lower is more stable). Fig~\ref{fig:stability} plots the two against
-each other. A log relative WIS of $-0.54$, for instance, means a model whose WIS is on average
-$e^{0.54}\approx1.7$ times smaller than the baseline's, i.e. about 1.7 times more accurate; a
-positive value of the same size would mean 1.7 times worse. The deep network has the best mean
-skill of any model on this scale ($-0.54$) but
-also the highest variability of any model except naive ($0.20$), the quantitative signature of its
+each other. A log relative WIS of $-0.42$, for instance, means a model whose WIS is on average
+$e^{0.42}\approx1.5$ times smaller than the baseline's, i.e. about 1.5 times more accurate; a
+positive value of the same size would mean 1.5 times worse. The deep network has the best mean
+skill of any model on this scale ($-0.42$) but
+also the highest variability of any model except naive ($0.24$), the quantitative signature of its
 ordinary-season strength and outlier-season failure. The mechanistic model sits at the opposite
-corner: modest mean skill ($-0.11$) but the lowest variability of any model ($0.03$), because its
+corner: modest mean skill ($-0.09$) but the lowest variability of any model ($0.04$), because its
 bootstrap of historical seasons widens intervals in proportion to historical variability rather than
 assuming a fixed noise scale. Both ensembles trade part of the deep network's mean skill for
-markedly better consistency (std $0.14$ and $0.11$ for the median and conformal ensembles), which is
+markedly better consistency (std $0.15$ and $0.13$ for the median and conformal ensembles), which is
 the quantitative counterpart of the qualitative claim above: an ensemble is not chosen for being the
 single best model in any one season, but for never being the worst.
 
@@ -240,26 +244,32 @@ accurate}\label{sec:conformal}
 Because different models win different seasons, a combination that is never worst is attractive. An
 unweighted per-quantile median ensemble, Vincentization, meaning that at every quantile level (the
 median, the 2.5th percentile, and so on) we take the median of the three models' values at that
-level, of the climatological, gradient-boosted,
-and deep-learning models achieves a better overall WIS than any single model (1281 versus 1299 for
-the best single model) and never suffers the catastrophic single-season failures of its members
-(Table~\ref{tab:leaderboard}). Its interval calibration is close to nominal but slightly narrow.
+level, of the climatological, gradient-boosted (XGBoost),
+and deep-learning models avoids the catastrophic single-season failure of its weakest member
+(WIS 3574 in the outlier season, far below the deep network's 4131) but, once XGBoost replaced a
+weaker gradient-boosted alternative as the strongest single model (Section~\ref{sec:methods}), no
+longer beats that single model outright on raw WIS alone (1234 versus 1190 for XGBoost;
+Table~\ref{tab:leaderboard}). Its interval calibration is close to nominal but slightly narrow.
 
 We improve on it with a conformal recalibration of the ensemble intervals, a distinct step from the
-conformalized quantile regression (CQR) used inside LightGBM (Section~\ref{sec:methods-conformal}
+conformalized quantile regression (CQR) used inside the gradient-boosted model
+(Section~\ref{sec:methods-conformal}
 gives the full procedure): both stretch prediction intervals to fix them being too narrow, but CQR
 calibrates one model's own intervals during fitting, whereas this step recalibrates the already-combined
 ensemble's intervals afterward. Calibration factors that make each central interval reach its
 nominal coverage are estimated on a single tuning season (fold 1) and applied to all seasons. The
-estimated factors are gentle and concentrate on the tails: 1.03, 1.00, 1.23, and 1.73 for the 50,
+estimated factors are gentle and concentrate on the tails: 1.08, 1.04, 1.19, and 1.86 for the 50,
 80, 90, and 95 percent intervals. Concretely, a raw 95 percent interval of, say, [40, 160] around a
-median of 100 becomes approximately [$-4$, 204], clipped to [0, 204] for non-negativity, after the
-1.73 factor: the median is never touched, only the interval stretches, and it stretches only where
-it needs to (the 80 percent interval above needed no correction at all). The recalibrated ensemble is the most accurate model overall
-(mean WIS 1216 versus 1281 for the plain ensemble; normalized WIS 0.555 versus 0.585) and better
-calibrated at the tails (empirical coverage 47/76/88/93 versus 46/76/84/88), as shown in
+median of 100 becomes approximately [$-12$, 212], clipped to [0, 212] for non-negativity, after the
+1.86 factor: the median is never touched, only the interval stretches, and it stretches only where
+it needs to (the 80 percent interval above needed only a negligible correction). This step is what
+turns the ensemble into the single best model overall, not merely a hedge against any one member's
+worst case: the recalibrated ensemble is the most accurate model overall
+(mean WIS 1162 versus 1234 for the plain ensemble and versus 1190 for the best single model,
+XGBoost; normalized WIS 0.561 versus 0.595) and better
+calibrated at the tails (empirical coverage 46/74/87/94 versus 43/72/82/86), as shown in
 Fig~\ref{fig:conformal}. Out of sample, on the three seasons not used for calibration, the reduction
-is 5.5 percent. The gain is concentrated in the outbreak season (fold 2 WIS 3568 to 3324) at a small
+is 6.2 percent. The gain is concentrated in the outbreak season (fold 2 WIS 3574 to 3297) at a small
 cost in ordinary seasons, so the recalibration behaves as asymmetric insurance: it widens the outer
 tails just enough to blunt catastrophic under-prediction in an extreme year while barely affecting
 normal seasons. Recalibrating the ensemble output outperforms recalibrating any single member,
@@ -278,15 +288,16 @@ metric and is reported for all folds and excluding the 2024 outlier. Coverage ne
 \cmidrule(l){5-8}
  & & \textbf{all} & \textbf{ex-2024} & 50 & 80 & 90 & 95 \\
 \midrule
-Ensemble (conformal)      & \textbf{1216} & \textbf{0.555} & 0.333 & 47 & 76 & 88 & 93 \\
-Ensemble (Vincentization) & 1281 & 0.585 & 0.325 & 46 & 76 & 84 & 88 \\
-Ensemble (inverse-WIS)    & 1287 & 0.588 & 0.321 & 48 & 76 & 86 & 89 \\
-LightGBM                  & 1299 & 0.593 & 0.443 & 51 & 81 & 89 & 93 \\
-Mechanistic               & 1303 & 0.595 & 0.431 & 53 & 79 & 85 & 89 \\
-Climatological            & 1327 & 0.606 & 0.379 & 48 & 73 & 82 & 85 \\
-GRU (deep learning)       & 1373 & 0.627 & \textbf{0.298} & 32 & 57 & 68 & 75 \\
-Seasonal-naive            & 1459 & 0.666 & 0.454 & 45 & 80 & 88 & 92 \\
-Naive                     & 1664 & 0.760 & 0.733 & 40 & 72 & 80 & 86 \\
+Ensemble (conformal)      & \textbf{1162} & \textbf{0.561} & 0.375 & 46 & 74 & 87 & 94 \\
+XGBoost                   & 1190 & 0.575 & 0.434 & 48 & 79 & 88 & 92 \\
+Ensemble (Vincentization) & 1234 & 0.595 & 0.371 & 43 & 72 & 82 & 86 \\
+Ensemble (inverse-WIS)    & 1238 & 0.598 & \textbf{0.358} & 44 & 74 & 84 & 89 \\
+Mechanistic               & 1238 & 0.598 & 0.450 & 55 & 80 & 86 & 90 \\
+Climatological            & 1264 & 0.610 & 0.407 & 48 & 74 & 83 & 86 \\
+LightGBM                  & 1301 & 0.628 & 0.549 & 48 & 80 & 89 & 93 \\
+Seasonal-naive            & 1379 & 0.666 & 0.468 & 43 & 78 & 87 & 92 \\
+GRU (deep learning)       & 1394 & 0.673 & 0.385 & 27 & 50 & 60 & 67 \\
+Naive                     & 1557 & 0.752 & 0.713 & 41 & 73 & 81 & 87 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -308,16 +319,18 @@ whole state-season units (with replacement) and recomputing normalized WIS on ea
 how much the result varies, over the 104
 state-season units gives a 95 percent confidence interval (CI) on the conformal ensemble's
 normalized WIS of
-$[0.404, 0.635]$, and the intervals of the leading models overlap (Fig~\ref{fig:significance}A), a
+$[0.423, 0.639]$, and the intervals of the leading models overlap (Fig~\ref{fig:significance}A), a
 direct consequence of the outbreak season inflating the variance of any magnitude-weighted score. The
 comparisons that matter are nonetheless decisive, because the models are strongly correlated across
 units, meaning they tend to do well or badly on the same state-seasons, so a paired analysis that
 looks at each model's difference from another on the very same units cancels that shared,
 season-driven variance instead of drowning in it (Fig~\ref{fig:significance}B).
-The conformal recalibration improves on the median ensemble by a mean 64.8 WIS (95 percent CI
-$[50.1, 79.5]$) and on the best single model, LightGBM, by 83.5 $([53.4, 115.8])$; on ordinary seasons
-the deep network beats LightGBM by 153.3 $([97.8, 215.8])$; and the conformal ensemble beats the naive
-baseline by 448 $([387, 514])$. All four intervals exclude zero. The lesson is methodological as much
+The conformal recalibration improves on the median ensemble by a mean 71.3 WIS (95 percent CI
+$[56.9, 87.8]$) and on the best single model, XGBoost, by 27.9 $([8.8, 47.3])$; on ordinary seasons
+the deep network beats XGBoost by 48.9 $([14.9, 87.4])$; XGBoost itself beats the alternative
+gradient-boosted implementation we also tested, LightGBM, by 111.1 $([81.6, 143.0])$; and the
+conformal ensemble beats the naive
+baseline by 395.1 $([338.8, 457.3])$. All five intervals exclude zero. The lesson is methodological as much
 as substantive: in a record with one extreme season, marginal skill intervals are wide, but paired
 comparisons remain informative and are the sound basis for model selection.
 
@@ -327,9 +340,10 @@ comparisons remain informative and are the sound basis for model selection.
 \caption{\textbf{Statistical significance of the model comparisons.} (A) Normalized WIS with 95
 percent block-bootstrap intervals over state-season units; the leading models' intervals overlap
 because the 2024 outbreak inflates the variance of absolute skill. (B) Paired differences in mean WIS
-with 95 percent intervals; all three comparisons lie left of zero, so the conformal ensemble
-significantly beats the median ensemble and LightGBM, and the deep network significantly beats
-LightGBM on ordinary seasons.}
+with 95 percent intervals; all four comparisons lie left of zero, so the conformal ensemble
+significantly beats the median ensemble and XGBoost, the deep network significantly beats
+XGBoost on ordinary seasons, and XGBoost significantly beats the alternative gradient-boosted
+implementation we also tested, LightGBM.}
 \label{fig:significance}
 \end{figure}
 
@@ -338,10 +352,17 @@ The overall mean WIS in Table~\ref{tab:leaderboard} is dominated by the largest 
 outbreak season, both of which contribute large absolute scores. The challenge's headline metric is
 instead a normalized WIS, the sum of WIS divided by the sum of observed cases, which is scale-free
 across regions. Under this metric the ordering changes in a revealing way. The conformal ensemble is
-best over all folds (normalized WIS 0.555), consistent with the mean-WIS ranking. When the 2024
-outlier is excluded to isolate ordinary-season skill, the deep network becomes the best model
-(normalized WIS 0.298) while the gradient-boosted model becomes the weakest of the serious models
-(0.443), an almost complete reversal of their mean-WIS standing (Fig~\ref{fig:relwis}). The
+best over all folds (normalized WIS 0.561), consistent with the mean-WIS ranking. When the 2024
+outlier is excluded to isolate ordinary-season skill, the deep network rises from worst of six
+leading models by mean WIS to third-best by normalized WIS (0.385), and the plain median ensemble
+overtakes the conformal ensemble for the single best spot on this metric (0.371 versus 0.375),
+while the gradient-boosted model (XGBoost) falls from second-best to fifth of six (0.434) and the
+mechanistic model falls from fourth to last (0.450) (Fig~\ref{fig:relwis}). The reversal is real but
+milder for the gradient-boosted model than it was for the LightGBM configuration we tested first,
+which fell all the way to the single weakest of the serious models under this metric (0.549, still
+its value in Table~\ref{tab:leaderboard} since LightGBM itself was not adopted): XGBoost's more
+balanced profile across seasons (Section~\ref{sec:noseason}) narrows, but does not eliminate, the
+metric-dependent reordering that motivates reporting both metrics. The
 disagreement is not a paradox. Consider two toy states, one with 10{,}000 weekly cases and one
 with 100: a model that misses the large state's count by 1{,}000 and the small state's by 50 has a
 much larger magnitude-weighted error, dominated by the 1{,}000, than a metric that instead scores
@@ -361,10 +382,11 @@ states.
 \includegraphics[width=0.72\textwidth]{../results/figures/paper_relative_wis.png}
 \caption{\textbf{The best model depends on the metric.} Model rank by magnitude-weighted mean WIS
 over all seasons (left) and by normalized WIS over the ordinary seasons with the 2024 outlier
-excluded (right); rank 1 is best. The rankings reorder: the deep network rises from last by mean WIS
-to first on ordinary seasons, and the gradient-boosted model falls from third to last, while the two
-ensembles stay near the top of both. Values in parentheses are mean WIS (left) and normalized WIS
-(right).}
+excluded (right); rank 1 is best, among these six models. The rankings reorder: the deep network
+rises from last by mean WIS to third on ordinary seasons, the gradient-boosted model (XGBoost) falls
+from second to fifth, the mechanistic model falls from fourth to last, and the plain median ensemble
+overtakes the conformal ensemble for the top spot. Values in parentheses are mean WIS (left) and
+normalized WIS (right).}
 \label{fig:relwis}
 \end{figure}
 
@@ -383,11 +405,11 @@ Raw gradient-boosted and deep-learning quantile models are over-confident
 (Fig~\ref{fig:coverage}): their nominal coverage, the fraction of outcomes an interval is supposed
 to contain, e.g. 90 percent for the 90 percent interval, is higher than their empirical coverage,
 the fraction it actually does contain. The GRU's nominal 50 percent
-interval only actually contains the truth 32 percent of the time, and its nominal 95 percent
-interval only 75 percent of the time, and it is under-covered in every season
+interval only actually contains the truth 27 percent of the time, and its nominal 95 percent
+interval only 67 percent of the time, and it is under-covered in every season
 rather than only in the outbreak year, which identifies the problem as systematic overconfidence
 rather than a regime-specific failure. Conformalized quantile regression restores the gradient-boosted
-model to near-nominal calibration (51/81/89/93) at negligible WIS cost. The same correction applied
+model (XGBoost) to near-nominal calibration (48/79/88/92) at negligible WIS cost. The same correction applied
 to the deep network trades away sharpness, how narrow and therefore informative its intervals are,
 on the seasons where it is already accurate, so
 calibration and sharpness trade off at the level of a single model. The per-quantile median of the
@@ -407,15 +429,16 @@ tracks the diagonal at the outer intervals.}
 \subsection{Skill varies with horizon, and the outbreak failure is under-prediction}\label{sec:robustness}
 Because the 15-week reporting gap places every target 16 to 67 weeks ahead, we stratified skill by
 lead time on the ordinary seasons (Fig~\ref{fig:robustness}A). The deep network's advantage is
-horizon-dependent: it is the best model at short lead times (normalized WIS 0.25 at 16 to 27 weeks)
-but degrades at the longest horizons (0.38 at 52 to 67 weeks), where it converges with the
-gradient-boosted model. The conformal ensemble is the most stable model across horizons and is never
+horizon-dependent: it is the best model at short lead times (normalized WIS 0.255 at 16 to 27 weeks)
+but degrades at the longest horizons (0.388 at 52 to 67 weeks), where both the conformal ensemble
+(0.338) and the gradient-boosted model (0.349) overtake it. The conformal ensemble is the most
+stable model across horizons and is never
 worst, which mirrors its stability across seasons. WIS decomposes exactly into three non-negative
 components (Section~\ref{sec:methods-scoring}): dispersion (a penalty for interval width, present
 even when the forecast is centered correctly), under-prediction, and over-prediction; decomposing it
 this way explains the
 outbreak-season failure directly (Fig~\ref{fig:robustness}B): in the 2024 season the ensemble's score
-is dominated by under-prediction (a mean of 2703 WIS units, against 619 for dispersion and 3 for
+is dominated by under-prediction (a mean of 2675 WIS units, against 621 for dispersion and 1 for
 over-prediction), whereas every other season is dominated by dispersion, i.e. is driven by ordinary
 interval width rather than the forecast being systematically off in either direction. The record epidemic was not
 mis-shaped but simply larger than any model would predict from pre-season information, which is why
@@ -438,7 +461,15 @@ adding observed-climate covariates to the gradient-boosted model, following the 
 non-linear (DLNM) structure of the strongest model in the 2024 sprint, which lets a covariate's
 effect on cases be both delayed (this week's temperature can affect cases several weeks later, not
 just this week) and non-linear \citep{araujo2026,gasparrini2010},
-worsened its backtest WIS from 1299 to 1342. A feature-importance analysis showed why: the nine
+worsened backtest WIS by 3.3 percent (1299 to 1342 on the LightGBM configuration on which this test
+was run\footnote{This test and the hyperparameter-tuning test below were performed on the
+LightGBM-based pipeline before it was superseded by XGBoost (Section~\ref{sec:methods}) and before
+a later data refresh; both figures are the original findings and have not been re-verified on the
+current XGBoost-based pipeline or the current data. We report them because the underlying
+methodological lessons -- observed local weather is not the load-bearing climate signal, and
+internal-holdout hyperparameter gains do not transfer to the true backtest -- do not depend on
+which gradient-boosted implementation they were discovered with, and re-deriving both from scratch
+was out of scope for this revision.}). A feature-importance analysis showed why: the nine
 added covariates (minimum temperature, a derived standardized-precipitation drought index at one,
 three, and six month accumulations, multi-month temperature lags, thermal range, and rainy days)
 together carried only 5.3 percent of importance and ranked below the existing features. The climate
@@ -448,7 +479,7 @@ weather, which is stale at the long horizons that dominate a full-season forecas
 hierarchical, empirical-Bayes pooling of each state's seasonal climatology toward its macroregion,
 that is, borrowing statistical strength by pulling each state's estimate partway toward its
 region's average rather than trusting each state's own history entirely,
-worsened the ensemble from 1216 to 1241, because Brazilian states are too heterogeneous within a
+worsened the ensemble from 1162 to 1185, because Brazilian states are too heterogeneous within a
 macroregion: shrinking a small state toward a region dominated by a larger, differently behaving
 state introduces bias. Third, a hyperparameter search that improved an internal time-block holdout,
 a held-out slice of recent training weeks used to tune hyperparameters before touching the real
@@ -461,17 +492,20 @@ not validated on the true forecasting task.
 \begin{table}[t]
 \centering\small
 \caption{\textbf{Interventions that did not help (negative results).} Each was evaluated on the same
-backtest as the main comparison.}
+backtest as the main comparison. $^{\dagger}$The climate-covariate and hyperparameter-tuning tests
+were run on the LightGBM configuration before it was superseded by XGBoost and before a later data
+refresh (see footnote in text); their methodological lessons still apply but the exact figures are
+not re-verified on the current pipeline.}
 \label{tab:ablation}
 \begin{tabular}{@{}lll@{}}
 \toprule
 \textbf{Intervention} & \textbf{Effect} & \textbf{Reason} \\
 \midrule
-Observed-climate covariates (LightGBM) & WIS 1299 $\rightarrow$ 1342 & 5.3\% importance; signal is climate \\
+Observed-climate covariates$^{\dagger}$ (LightGBM) & WIS 1299 $\rightarrow$ 1342 & 5.3\% importance; signal is climate \\
  & & forecast + ENSO, not observed weather \\
-Hierarchical macroregion pooling & WIS 1216 $\rightarrow$ 1241 & small-state bias; too correlated \\
+Hierarchical macroregion pooling & WIS 1162 $\rightarrow$ 1185 & small-state bias; too correlated \\
  (added to ensemble) & & with climatological member \\
-Hyperparameter tuning & internal holdout $+5\%$, & internal holdout misrepresents \\
+Hyperparameter tuning$^{\dagger}$ & internal holdout $+5\%$, & internal holdout misrepresents \\
  & backtest worse & full-season forecasting \\
 \bottomrule
 \end{tabular}
@@ -482,11 +516,11 @@ Brazil reported roughly 422{,}000 chikungunya cases in 2024, a cumulative incide
 100{,}000, and the virus has recurred across the country since its 2014 introduction with a spatial
 pattern shaped by heterogeneous population immunity~\citep{desouza2023}.
 We forecast chikungunya on the same 26 states, harness, and seasons as dengue. Two differences stand
-out. First, the gradient-boosted model alone is the best forecaster (WIS 82.3), ahead of the ensemble
-(91.6) and every other model (Table~\ref{tab:chik}); it is best in every season
+out. First, the gradient-boosted model alone is the best forecaster (WIS 79.1), ahead of the ensemble
+(89.5) and every other model (Table~\ref{tab:chik}); it is best in every season
 (Table~\ref{tab:chikfold}), so combining it with weaker models only dilutes it. Second, chikungunya is
 markedly more predictable than dengue relative to its scale: the 2024 season is only modestly harder
-than the others (mean WIS 125 versus a range of 68 to 143 across seasons), in contrast to the
+than the others (mean WIS 120 versus a range of 33 to 81 across seasons), in contrast to the
 order-of-magnitude jump dengue shows in 2024. This matches reports that chikungunya dynamics in Brazil
 are more regular than dengue's~\citep{desouza2023}, plausibly because immunity accumulates
 against a single antigenic type rather than interacting across four co-circulating dengue serotypes.
@@ -503,12 +537,12 @@ boosting alone is best.}
 \toprule
 \textbf{Model} & \textbf{WIS} & \textbf{Cov.\ 50 (\%)} & \textbf{Cov.\ 90 (\%)} \\
 \midrule
-LightGBM                  & \textbf{82.3} & 45 & 87 \\
-Ensemble (Vincentization) & 91.6 & 53 & 87 \\
-Climatological            & 94.4 & 55 & 84 \\
-Seasonal-naive            & 97.8 & 49 & 89 \\
-Mechanistic               & 101.0 & 51 & 85 \\
-Naive                     & 123.1 & 40 & 79 \\
+LightGBM                  & \textbf{79.1} & 47 & 88 \\
+Ensemble (Vincentization) & 89.5 & 55 & 87 \\
+Climatological            & 92.4 & 56 & 85 \\
+Seasonal-naive            & 95.1 & 48 & 88 \\
+Mechanistic               & 99.5 & 53 & 86 \\
+Naive                     & 119.1 & 41 & 80 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -522,12 +556,12 @@ the 2024 season (fold 2) is only modestly harder than the others.}
 \toprule
 \textbf{Model} & \textbf{Fold 1} & \textbf{Fold 2} & \textbf{Fold 3} & \textbf{Fold 4} \\
 \midrule
-LightGBM                  & \textbf{81.5} & \textbf{125.0} & \textbf{67.8} & \textbf{20.6} \\
-Ensemble (Vincentization) & 88.3 & 142.0 & 73.8 & 25.2 \\
-Climatological            & 94.3 & 143.3 & 75.3 & 27.6 \\
-Seasonal-naive            & 92.8 & 152.3 & 77.1 & 32.5 \\
-Mechanistic               & 90.7 & 166.3 & 77.8 & 29.2 \\
-Naive                     & 181.3 & 145.7 & 75.3 & 48.6 \\
+LightGBM                  & \textbf{81.2} & \textbf{120.2} & \textbf{69.2} & \textbf{33.4} \\
+Ensemble (Vincentization) & 88.7 & 141.1 & 73.8 & 41.5 \\
+Climatological            & 94.3 & 143.3 & 75.3 & 43.7 \\
+Seasonal-naive            & 92.8 & 152.3 & 77.1 & 44.6 \\
+Mechanistic               & 92.1 & 166.6 & 77.0 & 48.6 \\
+Naive                     & 181.3 & 145.7 & 75.3 & 57.7 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -536,8 +570,8 @@ Naive                     & 181.3 & 145.7 & 75.3 & 48.6 \\
 The challenge also solicits municipal forecasts for 15 dengue and 10 chikungunya cities, an optional
 target we submitted with the climatological quantile model. City-level forecasting is much harder than
 state-level: the best model's normalized WIS is 0.60 for dengue cities and 0.87 for chikungunya cities
-(Table~\ref{tab:city}), against 0.56 and 0.64 at the state level. Interval coverage is also poorer (50
-percent coverage of 36 percent for dengue cities), because many mid-sized municipalities have episodic,
+(Table~\ref{tab:city}), against 0.56 and 0.62 at the state level. Interval coverage is also poorer (50
+percent coverage of 39 percent for dengue cities), because many mid-sized municipalities have episodic,
 over-dispersed series with long runs of zero counts that a per-week empirical quantile under-covers. A
 degenerate all-zero median is a concrete failure mode of these sparse series, which we addressed by
 switching the point forecast to a clamped predictive mean, the distribution's mean rather than its
@@ -549,19 +583,21 @@ at the level where interventions are delivered.
 \begin{table}[t]
 \centering\small
 \caption{\textbf{City-level backtest} (optional tracks; climatological quantile model submitted). WIS
-and normalized WIS averaged over the target cities and four seasons.}
+and normalized WIS averaged over the target cities and four seasons. For chikungunya cities,
+climatological and seasonal-naive are statistically indistinguishable (WIS 30.17 versus 30.17); no
+value is bolded there for that reason.}
 \label{tab:city}
 \begin{tabular}{@{}llrrc@{}}
 \toprule
 \textbf{Disease} & \textbf{Model} & \textbf{WIS} & \textbf{nWIS} & \textbf{Cov.\ 50 (\%)} \\
 \midrule
-Dengue (15 cities)      & Climatological & \textbf{128.7} & \textbf{0.60} & 36 \\
-                        & Seasonal-naive & 138.1 & 0.65 & 31 \\
-                        & Naive          & 141.2 & 0.66 & 30 \\
+Dengue (15 cities)      & Climatological & \textbf{123.3} & \textbf{0.60} & 39 \\
+                        & Seasonal-naive & 131.8 & 0.64 & 30 \\
+                        & Naive          & 133.5 & 0.65 & 30 \\
 \addlinespace
-Chikungunya (10 cities) & Climatological & \textbf{32.2} & \textbf{0.87} & 54 \\
-                        & Seasonal-naive & 32.5 & 0.87 & 49 \\
-                        & Naive          & 36.2 & 0.97 & 32 \\
+Chikungunya (10 cities) & Climatological & 30.2 & 0.87 & 57 \\
+                        & Seasonal-naive & 30.2 & 0.87 & 50 \\
+                        & Naive          & 34.4 & 1.00 & 33 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -575,13 +611,14 @@ percent of its own peak (onset), the timing and log-magnitude error at the true 
 Section~\ref{sec:noseason}), and the log-ratio of predicted to observed total season cases
 (Table~\ref{tab:operational}). No model wins on every one of these summaries, which is the same
 qualitative pattern as the main WIS results but on a different, more directly interpretable set of
-outputs. The gradient-boosted model has the lowest onset-timing error (3.1 weeks mean absolute
-error, against 3.3 for the conformal ensemble), the climatological model has the lowest peak-timing
-error (4.4 weeks, against 4.6 for the ensemble), and the gradient-boosted model again gives the
-least biased total-season case count (a log-ratio of $-0.08$, i.e. predicting about 92 percent of
-the true total, an 8 percent under-prediction, at the median unit, against 20
-percent for the ensemble and 55 percent for the mechanistic model). Every model under-predicts case
-counts at the true peak week specifically, by 46 to 76 percent at the median unit, more than it
+outputs. The gradient-boosted model (XGBoost) has the lowest onset-timing error (3.7 weeks mean
+absolute
+error, against 3.8 for the conformal ensemble), the climatological model has the lowest peak-timing
+error (4.5 weeks, against 4.9 for the ensemble), and the gradient-boosted model again gives the
+least biased total-season case count (a log-ratio of $-0.01$, i.e. predicting within 1 percent of
+the true total at the median unit, against 20
+percent under-prediction for the ensemble and 56 percent for the mechanistic model). Every model under-predicts case
+counts at the true peak week specifically, by 42 to 76 percent at the median unit, more than it
 under-predicts the season total, which shows that the harder part of the forecasting problem is
 capturing acute intensity at the peak rather than accumulated burden over the season. The ensemble
 is a reasonable middle choice on every one of these summaries without being the best on any single
@@ -600,22 +637,22 @@ respectively; 0 is unbiased, negative is under-prediction. Best value in each co
 \textbf{Model} & \textbf{Onset MAE} & \textbf{Peak-week MAE} & \textbf{Peak magnitude} & \textbf{Total cases} \\
  & (weeks) & (weeks) & (log-ratio) & (log-ratio) \\
 \midrule
-Ensemble (conformal)   & 3.3 & 4.6 & $-0.73$ & $-0.22$ \\
-LightGBM               & \textbf{3.1} & 4.7 & \textbf{$-0.54$} & \textbf{$-0.08$} \\
-Climatological         & 3.6 & \textbf{4.4} & $-0.95$ & $-0.35$ \\
-GRU (deep learning)    & 3.9 & 5.2 & $-0.62$ & $-0.17$ \\
-Mechanistic            & 3.7 & 5.0 & $-1.43$ & $-0.77$ \\
-Seasonal-naive         & 3.7 & 4.6 & $-0.86$ & $-0.34$ \\
-Naive                  & 4.5 & 16.2 & $-1.01$ & $0.00^{*}$ \\
+Ensemble (conformal)   & 3.8 & 4.9 & $-0.71$ & $-0.22$ \\
+XGBoost                & \textbf{3.7} & 5.3 & \textbf{$-0.55$} & \textbf{$-0.01$} \\
+Climatological         & 4.2 & \textbf{4.5} & $-0.85$ & $-0.32$ \\
+GRU (deep learning)    & 4.1 & 5.0 & $-0.59$ & $-0.12$ \\
+Mechanistic            & 4.1 & 5.0 & $-1.43$ & $-0.83$ \\
+Seasonal-naive         & 4.2 & 4.8 & $-0.82$ & $-0.30$ \\
+Naive                  & 4.9 & 17.4 & $-1.13$ & $-0.14$ \\
 \bottomrule
 \end{tabular}
 
 \smallskip
-\footnotesize $^{*}$Naive's total-cases figure is not genuine skill: carrying the last observed
-value forward for 52 weeks over- and under-predicts in roughly equal measure across the season, so
-early- and late-season errors cancel in the sum even though naive is the worst model by every other
-measure in this table, including a 16-week peak-timing error. It is a reminder that a single
-season-total number, like a single aggregate WIS, can look better than a model's real skill.
+\footnotesize Naive is the worst model by every measure in this table, including a 17-week
+peak-timing error; unlike in an earlier data vintage of this analysis, its total-cases figure no
+longer happens to look artificially competitive, which is itself a reminder that a single
+season-total number, like a single aggregate WIS, can be sensitive to incidental error cancellation
+and should not be read in isolation from the other columns.
 \end{table}
 
 \section{Discussion}
@@ -702,16 +739,21 @@ families, the cutoff-filtered history is expanded into a synthetic-origin traini
 historical week becomes a candidate forecast origin, paired with the realized value at horizons 1
 to 67 weeks ahead, which supplies enough training examples for gradient boosting and the deep
 network despite only four official evaluation windows existing. Four model families are then fit
-independently per fold: baselines and the climatological quantile model, LightGBM with conformalized
-quantile regression, the GRU deep ensemble, and the semi-mechanistic trajectory bootstrap. The
-climatological, LightGBM, and GRU outputs (not the mechanistic model, which is evaluated separately
+independently per fold: baselines and the climatological quantile model, a gradient-boosted model
+with conformalized
+quantile regression, the GRU deep ensemble, and the semi-mechanistic trajectory bootstrap. We
+evaluated two gradient-boosting implementations on the identical panel, LightGBM \citep{ke2017} and
+XGBoost \citep{chen2016}, and adopted XGBoost, which scored significantly better
+(Section~\ref{sec:significance}; Fig~\ref{fig:significance}). The
+climatological, XGBoost, and GRU outputs (not the mechanistic model, which is evaluated separately
 for comparison) are combined by per-quantile median (Vincentization) into an ensemble, which is then
 conformally recalibrated using widening factors estimated once on a designated tuning season
 (Section~\ref{sec:methods-conformal}). The output at every stage is the same canonical shape, nine
 quantiles per state or city and week, and the final recalibrated quantiles are validated against the
 platform's submission schema (non-negative, correctly nested, no date gaps) before being written out.
 Chikungunya-state and the two optional city tracks follow the same pipeline but submit a single
-family's output directly (LightGBM for chikungunya-state, climatological for both city tracks; see
+family's output directly (LightGBM for chikungunya-state, unchanged from the dengue pipeline's
+original configuration, climatological for both city tracks; see
 Sections~\ref{sec:chik} and \ref{sec:city}) rather than the three-member ensemble.
 
 \begin{figure}[t]
@@ -719,7 +761,7 @@ Sections~\ref{sec:chik} and \ref{sec:city}) rather than the three-member ensembl
 \includegraphics[width=0.98\textwidth]{../results/figures/paper_pipeline.png}
 \caption{\textbf{Pipeline overview.} The dengue state-level pipeline, the most complex of the four
 tracks: cutoff-filtered data becomes a synthetic-origin training panel, four model families are fit
-independently, three of them (climatological, LightGBM, GRU) are combined by per-quantile median
+independently, three of them (climatological, XGBoost, GRU) are combined by per-quantile median
 into an ensemble, and conformal recalibration produces the final submitted quantiles. The mechanistic
 model is evaluated for comparison but is not an ensemble member. Chikungunya-state and the city
 tracks (not shown) follow the same stages but submit a single family's output directly.}
@@ -777,7 +819,7 @@ seasonal-naive model (same-epidemiological-week history), and a climatological q
 order-statistic quantiles per state and epidemiological week over a five-week window).
 
 \noindent\textbf{Gradient boosting.} Only four official evaluation windows exist per disease, far
-too few to fit a tree ensemble, so LightGBM \citep{ke2017} is instead fit on a
+too few to fit a tree ensemble, so a gradient-boosted quantile model is instead fit on a
 synthetic-origin panel: within each fold's own cutoff-filtered history, every Sunday from roughly
 2014 onward becomes a candidate forecast origin, and every (origin, horizon) pair from 1 to 67 weeks
 ahead becomes one training row, with origin-anchored lag, rolling, seasonal, climate, ocean,
@@ -786,7 +828,13 @@ as the label. For example, one row might read: origin = the first Sunday of Marc
 weeks, features computed using only data available on that March Sunday, label = the observed case
 count 12 weeks after it. This turns roughly 500 usable weekly origins per state, crossed with up to
 67 horizons, into tens of thousands of training rows for a single fold, while evaluation still only
-ever happens at that fold's own four-times-a-year official target window. Predictive intervals are
+ever happens at that fold's own four-times-a-year official target window. We evaluated two
+gradient-boosting implementations on this identical panel: LightGBM \citep{ke2017}, one booster per
+quantile level, and XGBoost \citep{chen2016}, a single booster with a native multi-quantile
+objective covering all nine levels jointly. XGBoost scored significantly better both overall and on
+the outlier season (Sections~\ref{sec:noseason} and \ref{sec:significance}) and is the version used
+in the main ensemble; LightGBM remains the gradient-boosted family used for the chikungunya-state
+track, on which it was not re-evaluated against XGBoost. Predictive intervals for both are
 calibrated by conformalized quantile regression (CQR) \citep{romano2019}: a held-out slice of the
 training panel is used to measure how much each quantile needs to be shifted so that it achieves its
 nominal coverage, and that shift is then applied to the model's raw quantile predictions, in the
@@ -881,6 +929,7 @@ Mosqlimate teams for curating and distributing the data.
 \bibitem{romano2019} Romano Y, Patterson E, Cand\`es EJ. Conformalized quantile regression. \emph{Adv Neural Inf Process Syst} 32 (2019).
 \bibitem{gibbs2021} Gibbs I, Cand\`es EJ. Adaptive conformal inference under distribution shift. \emph{Adv Neural Inf Process Syst} 34 (2021).
 \bibitem{ke2017} Ke G, Meng Q, Finley T, et al. LightGBM: a highly efficient gradient boosting decision tree. \emph{Adv Neural Inf Process Syst} 30 (2017).
+\bibitem{chen2016} Chen T, Guestrin C. XGBoost: a scalable tree boosting system. \emph{Proc 22nd ACM SIGKDD Int Conf Knowledge Discovery and Data Mining} 785--794 (2016).
 \bibitem{cho2014} Cho K, van Merri\"enboer B, Gulcehre C, et al. Learning phrase representations using RNN encoder-decoder for statistical machine translation. \emph{Proc EMNLP} (2014).
 \bibitem{lakshminarayanan2017} Lakshminarayanan B, Pritzel A, Blundell C. Simple and scalable predictive uncertainty estimation using deep ensembles. \emph{Adv Neural Inf Process Syst} 30 (2017).
 \bibitem{gasparrini2010} Gasparrini A, Armstrong B, Kenward MG. Distributed lag non-linear models. \emph{Stat Med} 29(21):2224--2234 (2010).

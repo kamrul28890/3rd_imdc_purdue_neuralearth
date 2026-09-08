@@ -22,9 +22,9 @@ from imdc.config import FIGURES_DIR, METRICS_DIR
 from imdc.evaluation.metrics import relative_wis
 
 BASELINE = "seasonal_naive"
-MODELS = ["climatological_quantile", "lgbm_quantile", "gru_negbin", "mechanistic_traj",
+MODELS = ["climatological_quantile", "xgb_quantile", "gru_negbin", "mechanistic_traj",
           "ensemble_vincent", "ensemble_conformal"]
-LAB = {"climatological_quantile": "Climatological", "lgbm_quantile": "LightGBM",
+LAB = {"climatological_quantile": "Climatological", "xgb_quantile": "XGBoost",
        "gru_negbin": "GRU", "mechanistic_traj": "Mechanistic",
        "ensemble_vincent": "Ensemble (median)", "ensemble_conformal": "Ensemble (conformal)"}
 

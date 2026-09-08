@@ -61,7 +61,9 @@ weights every unit equally; and the normalized WIS, the sum of WIS divided by th
 cases, which is the challenge's headline metric and is scale-free across regions.
 
 \section*{S2 Text. Model configurations}
-\textbf{Features (gradient boosting).} The LightGBM model is fit on a synthetic-origin panel that
+\textbf{Features (gradient boosting).} Both gradient-boosting implementations evaluated in the main
+text, LightGBM and
+XGBoost, are fit on the identical synthetic-origin panel that
 expands each fold into many weekly origins crossed with forecast horizons 1 to 67 weeks, with
 origin-anchored features computed only from the cutoff-filtered history:
 \begin{itemize}
@@ -98,7 +100,14 @@ the main text, negative results).
 LightGBM (per quantile) & objective: quantile at each of the nine levels; num\_leaves 31; max\_depth 5;
 learning\_rate 0.05; 400 boosting rounds; feature\_fraction 0.8; bagging\_fraction 0.8; bagging\_freq 1;
 seed 42; deterministic. Intervals calibrated by conformalized quantile regression on a trailing
-78-week window. \\
+78-week window. Used for the chikungunya-state track; superseded by XGBoost below for the dengue
+ensemble. \\
+\addlinespace
+XGBoost (multi-quantile, chosen for dengue) & objective: \texttt{reg:quantileerror} with
+\texttt{quantile\_alpha} set to all nine levels jointly, \texttt{multi\_strategy=}
+\texttt{multi\_output\_tree} (one booster covers all quantiles); \texttt{tree\_method=hist};
+max\_depth 5; min\_child\_weight 30; learning\_rate 0.05; 400 boosting rounds; subsample 0.8;
+colsample\_bytree 0.8; seed 42. Same feature set and CQR calibration scheme as LightGBM above. \\
 \addlinespace
 GRU deep ensemble & input sequence length 104 weeks; single-layer GRU encoder, hidden size 48, shared
 across all 26 states; per-state embedding of dimension 8; decoder is a two-layer perceptron with
@@ -122,53 +131,67 @@ median $m$, and for each calibration unit, the multiplicative factor needed to j
 observation is $r=(y-m)/(u_L-m)$ when $y>m$ and $r=(m-y)/(m-\ell_L)$ when $y<m$, and $0$ otherwise. The
 widening factor $s_L$ is the $L/100$ empirical quantile of $r$ over the tuning season, so that widening
 the interval about the median by $s_L$ yields approximately $L$ percent empirical coverage. The
-estimated factors are $s_{50}=1.03$, $s_{80}=1.00$, $s_{90}=1.23$, and $s_{95}=1.73$. They are gentle
+estimated factors are $s_{50}=1.08$, $s_{80}=1.04$, $s_{90}=1.19$, and $s_{95}=1.86$. They are gentle
 and concentrate on the outer tails, which is why the recalibration protects against catastrophic
 under-prediction in the outbreak season at small cost in ordinary seasons. Recalibrating the ensemble
 output outperforms recalibrating any single member, because the per-quantile median across members
 otherwise dilutes a member's widening (recalibrating the deep-learning member alone yields mean WIS
-1259 versus 1216 for the ensemble-output recalibration).
+1273 versus 1162 for the ensemble-output recalibration).
 
 \noindent\textbf{Member-composition robustness (S2 Table).} Table~\ref{tab:sweep} scores every
 member subset under the same conformal recalibration. The chosen three-member ensemble is close to the
 best composition by the headline normalized WIS, and no subset is better on both the all-season and the
-ordinary-season metric. The subset that appears best by all-season mean WIS
-(climatological plus mechanistic) is the worst of the strong subsets on ordinary seasons
-(normalized WIS 0.420 versus 0.333), because it wins only by handling the 2024 outlier and drops the
-two machine-learning models that carry the ordinary-season signal. This is the composition-level
-analogue of the metric-disagreement finding.
+ordinary-season metric. The subset that appears best by all-season mean WIS and normalized WIS
+(climatological plus mechanistic, 1141 and 0.551) is the worst of the strong subsets on ordinary
+seasons (normalized WIS 0.455 versus 0.375), because it wins only by handling the 2024 outlier and
+drops the two machine-learning models that carry the ordinary-season signal -- the composition-level
+analogue of the metric-disagreement finding. It is also, by construction, an unreliable way to choose
+a composition: evaluating candidate subsets on the very seasons being reported invites exactly the
+overfitting the tuning-fold discipline exists to prevent. Scoring each candidate on fold 1 alone
+(the only fold this project's own discipline permits for such a decision) instead of on the full
+four-season table exposes this directly: the climatological-plus-mechanistic subset that looks best
+on the reported seasons is in fact one of the worst by that fold-1 criterion (normalized WIS 0.390,
+against 0.306 for the chosen composition and 0.282 for the single best-scoring subset,
+XGBoost plus GRU, which is itself the worst composition of all on the reported ordinary-season
+metric, 0.365 notwithstanding) -- a within-study demonstration of why ensemble composition should be
+fixed by the tuning fold and not by inspecting the headline table.
 
 \begin{table}[t]
 \centering\small
 \caption{\textbf{S2 Table. Ensemble composition sweep} (each subset with conformal recalibration).
-nWIS is normalized WIS. The chosen composition is in bold.}
+nWIS is normalized WIS; nWIS ordinary excludes the 2024 outlier (fold 2). Fold-1 nWIS is the same
+quantity computed on the tuning fold alone, the only basis this project's discipline permits for
+choosing a composition; several subsets that look attractive on the reported columns fail this
+check. The chosen composition is in bold.}
 \label{tab:sweep}
-\begin{tabular}{@{}lrrr@{}}
+\begin{tabular}{@{}lrrrr@{}}
 \toprule
-\textbf{Members} & \textbf{Mean WIS} & \textbf{nWIS all} & \textbf{nWIS ordinary} \\
+\textbf{Members} & \textbf{Mean WIS} & \textbf{nWIS all} & \textbf{nWIS ordinary} & \textbf{Fold-1 nWIS} \\
 \midrule
-Climatological + Mechanistic & 1185 & 0.541 & 0.420 \\
-Climatological + GRU + Mechanistic & 1213 & 0.554 & 0.387 \\
-\textbf{Climatological + LightGBM + GRU (chosen)} & \textbf{1216} & \textbf{0.555} & \textbf{0.333} \\
-Climatological + GRU & 1216 & 0.555 & 0.326 \\
-GRU + Mechanistic & 1217 & 0.556 & 0.339 \\
-Climatological + LightGBM + GRU + Mechanistic & 1247 & 0.569 & 0.356 \\
-LightGBM + GRU & 1299 & 0.593 & 0.331 \\
-LightGBM + Mechanistic & 1314 & 0.600 & 0.408 \\
+Climatological + Mechanistic & 1141 & 0.551 & 0.455 & 0.390 \\
+\textbf{Climatological + XGBoost + GRU (chosen)} & \textbf{1162} & \textbf{0.561} & \textbf{0.375} & \textbf{0.306} \\
+Climatological + GRU + Mechanistic & 1170 & 0.565 & 0.421 & 0.372 \\
+Climatological + XGBoost + GRU + Mechanistic & 1182 & 0.571 & 0.386 & 0.335 \\
+GRU + Mechanistic & 1194 & 0.576 & 0.377 & 0.343 \\
+Climatological + GRU & 1202 & 0.580 & 0.373 & 0.309 \\
+XGBoost + Mechanistic & 1211 & 0.585 & 0.408 & 0.335 \\
+XGBoost + GRU & 1245 & 0.601 & 0.365 & 0.282 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \noindent\textbf{Weight robustness.} Inverse-WIS ensemble weights are stable across the choice of
-tuning season: tuning on fold 1 gives (climatological 0.31, LightGBM 0.34, GRU 0.35); on fold 2,
-(0.33, 0.36, 0.30); on fold 3, (0.31, 0.25, 0.45). The unweighted median ensemble avoids this choice
+tuning season: tuning on fold 1 gives (climatological 0.32, XGBoost 0.33, GRU 0.35); on fold 2,
+(0.34, 0.37, 0.29); on fold 3, (0.27, 0.29, 0.44). The unweighted median ensemble avoids this choice
 entirely and performs comparably, which is why it is preferred.
 
 \section*{S4 Table. Normalized WIS by season}
 Table~\ref{tab:nwisfold} gives normalized WIS by model and season. It shows the regime split
-numerically: the deep network is best on the ordinary seasons (fold 3, 0.271) but worst on the 2024
-outlier (fold 2, 0.798), while the conformal ensemble has the best outbreak-season normalized WIS of
-any ensemble (0.671) and is therefore best overall.
+numerically: the deep network is best on the ordinary seasons (fold 3, 0.247) but worst on the 2024
+outlier (fold 2, 0.833), while XGBoost has the best outbreak-season normalized WIS of any single
+model or ensemble (0.653), narrowly ahead of the conformal ensemble (0.665). Fold 4 (2025--26) is
+only partially resolved, and its normalized WIS values are correspondingly larger and noisier for
+every model than the other three folds; they should be read as provisional.
 
 \begin{table}[t]
 \centering\small
@@ -178,15 +201,15 @@ any ensemble (0.671) and is therefore best overall.
 \toprule
 \textbf{Model} & \textbf{Fold 1} & \textbf{Fold 2} & \textbf{Fold 3} & \textbf{Fold 4} \\
 \midrule
-Ensemble (conformal)      & 0.308 & \textbf{0.671} & 0.335 & 0.477 \\
-Ensemble (Vincentization) & 0.308 & 0.720 & 0.325 & \textbf{0.436} \\
-Ensemble (inverse-WIS)    & \textbf{0.292} & 0.727 & 0.321 & 0.507 \\
-LightGBM                  & 0.320 & 0.671 & 0.492 & 0.866 \\
-Mechanistic               & 0.425 & 0.680 & 0.421 & 0.552 \\
-Climatological            & 0.350 & 0.724 & 0.394 & 0.446 \\
-GRU                       & 0.308 & 0.798 & \textbf{0.271} & 0.451 \\
-Seasonal-naive            & 0.454 & 0.776 & 0.444 & 0.528 \\
-Naive                     & 0.659 & 0.773 & 0.806 & 0.653 \\
+Ensemble (conformal)      & 0.306 & 0.665 & 0.308 & 0.827 \\
+Ensemble (Vincentization) & 0.307 & 0.721 & 0.304 & 0.809 \\
+Ensemble (inverse-WIS)    & \textbf{0.284} & 0.731 & 0.296 & 0.812 \\
+XGBoost                   & 0.341 & \textbf{0.653} & 0.370 & 0.948 \\
+Mechanistic               & 0.425 & 0.680 & 0.421 & 0.636 \\
+Climatological            & 0.350 & 0.724 & 0.394 & 0.626 \\
+GRU                       & 0.316 & 0.833 & \textbf{0.247} & 1.100 \\
+Seasonal-naive            & 0.454 & 0.776 & 0.444 & 0.595 \\
+Naive                     & 0.659 & 0.773 & 0.806 & \textbf{0.540} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -255,7 +278,8 @@ epidemic peak weeks across states and seasons.
 The complete pipeline is released as an installable package with a single command to reproduce every
 result. Leakage safety, scoring correctness, model persistence, and every model family are covered by
 an automated test suite that runs in continuous integration. All model fitting is deterministic under a
-fixed seed: gradient boosting uses LightGBM deterministic mode, and the deep ensemble fixes the seed of
+fixed seed: LightGBM uses its own deterministic mode, XGBoost and the mechanistic model fix their own
+seeds, and the deep ensemble fixes the seed of
 each member. A provenance manifest records the exact data checksums and code revision behind each
 reported number, and the per-state scored predictions for all models are released so that any table or
 figure can be regenerated. Validated submission files for the four official tracks (dengue and
@@ -268,9 +292,11 @@ seasonal-naive baseline in one state, averaged over the four seasons, the same q
 the stability figure in the main text (Fig 3) but broken out by state instead of collapsed to a
 mean and standard deviation. Green cells are better than the baseline and red cells are worse. Two
 patterns are visible beyond the aggregate numbers already reported: the deep network's advantage is
-concentrated in a subset of states (Ceara and Rio de Janeiro most strongly) rather than uniform, and
-the gradient-boosted model is the only one of the six with states that are red, meaning worse than
-the seasonal-naive baseline (Amapa, Paraiba, Pernambuco), which the state-level aggregate in
+concentrated in a subset of states (Ceara and Roraima most strongly) rather than uniform, and
+the gradient-boosted model (XGBoost) is the only one of the six with states that are red, meaning
+worse than
+the seasonal-naive baseline (Sergipe most strongly, followed by Para\'iba, Amap\'a, Maranh\~ao, Par\'a,
+Piau\'i, and Rond\^onia), which the state-level aggregate in
 Table 1 does not show.
 
 \begin{figure}[t]\centering
@@ -310,7 +336,7 @@ reach its nominal coverage.
 after-the-fact widening of the already-combined ensemble's intervals, by a multiplicative factor per
 interval level tuned on one season and reused unchanged thereafter; distinct from CQR, which
 calibrates one model during fitting rather than the combined ensemble afterward.
-\item \textbf{Synthetic-origin panel} — the training set built for LightGBM/GRU: every historical
+\item \textbf{Synthetic-origin panel} — the training set built for XGBoost/LightGBM/GRU: every historical
 week within a fold's cutoff-filtered history becomes a candidate forecast origin, crossed with
 horizons 1--67 weeks ahead, so a handful of true evaluation windows becomes tens of thousands of
 training rows.

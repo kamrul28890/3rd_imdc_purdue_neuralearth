@@ -28,16 +28,20 @@ reconciliation, §5.3 stacking.
 
 ## 1. Correctness & robustness
 
-### 1.1 EW53 season-week collision (latent bug) — **P0**
-**What:** `mechanistic.py::season_week` maps both EW1 and EW53 to season-week 13
-(`season_week(1)==season_week(53)==13`). Years with an ISO/epi week 53 (e.g. 2026) collide,
-so EW53 case data overwrites/mis-slots into the EW1 bucket.
-**Why it matters:** silently corrupts the mechanistic model's historical trajectories for
-53-week seasons and the fold-4 (2025–26) forecast — exactly the season we just submitted.
-**How:** make the season index handle 53-week years explicitly — either extend `SEASON_LEN`
-to 53 with a proper EW53→53 mapping, or drop EW53 by convention (document it). Add a unit
-test asserting the mapping is injective over EW1–EW53.
-**Effort:** 1–2 h.
+### 1.1 EW53 season-week collision — **RESOLVED** (verified 2026-09-08; was P0)
+**What it described:** a hypothesized `mechanistic.py::season_week` mapping both EW1 and EW53 to
+the same season-week index, corrupting 53-week-season data (e.g. the actual 2025-26 season, which
+does have an EW53 - 2025 is a 53-epiweek year; 2026 is not).
+**Status:** already fixed by the time of a 2026-09-08 verification pass - the current
+`mechanistic.py::season_week_from_date` computes the index via day-arithmetic from the season's
+EW41 start date (`(date - season_start).days // 7 + 1`), not a naive epiweek-number mapping, and
+its own docstring already states this is "so 53-week years don't collide." Directly verified
+against the real case: EW52 2025 -> season-week 12, EW53 2025 -> season-week 13, EW1 2026 ->
+season-week 14 - three distinct, sequential values, no collision. This entry was left describing
+an already-fixed bug as an open P0 - correcting it here so it isn't mistakenly "fixed" again or
+used to distrust the fold-4/2025-26 mechanistic results. A unit test asserting injectivity over
+EW1-EW53 (the original "How" suggestion) is still worth adding as a regression guard, but the P0
+correctness risk itself is gone.
 
 ### 1.2 Degenerate all-zero-median forecasts — **P0**
 **What:** For sparse series (small cities with ~no chikungunya) the climatological median is
@@ -49,6 +53,14 @@ intervals is degenerate, and it blocks submission.
 or the historical mean) when the whole median series is zero; (b) better, use a proper
 zero-inflated / hurdle model or the mean instead of the median for near-zero series. Add a
 submission-validator check that flags all-zero-median tables *before* upload.
+**Note (checked 2026-09-08): only half-built.** `ClimatologicalQuantileModel` already has a
+`point_estimate: "median" | "mean"` constructor option implementing exactly the "mean instead of
+median" fix in (b) - but `scripts/generate_forecast_2026_27.py` instantiates it with the bare
+class (`ClimatologicalQuantileModel`, no factory/lambda), so the forecast actually generated and
+submitted still uses the default `"median"` and gets none of this fix's benefit. If this is meant
+to be the fix, it needs to actually be wired in at the call site
+(`city_single_forecast(..., lambda: ClimatologicalQuantileModel(point_estimate="mean"), ...)` for
+the city tracks at least) - don't assume it's applied just because the option exists.
 **Effort:** 2–4 h (short term); 1–2 d (proper model).
 
 ### 1.3 Fold-4 is prospective, not validated — **P1**
@@ -60,12 +72,125 @@ truncated window and the submitted fold-4 forecast is unscoreable until the seas
 refreshed data arrives.
 **Effort:** 1–2 h.
 
-### 1.4 GRU is not bit-reproducible (MPS) — **P2**
-**What:** documented, but the GRU still varies run-to-run on Apple MPS.
+### 1.4 GRU is not bit-reproducible (MPS/CUDA) — **P1** (raised from P2, 2026-09-08)
+**What:** documented, but the GRU still varies run-to-run on Apple MPS. Extended overnight
+(2026-09-08): this machine's `_device()` only ever checked MPS, never CUDA, so `gru_negbin` had
+always trained on CPU despite a CUDA-capable GPU being available. Adding a CUDA check and
+re-running the (already deployed, paper-cited) `gru_negbin` model - same code, same
+`torch.manual_seed` - gave WIS=1434.1 vs the original CPU run's 1372.9, and normWIS_ex2024 nearly
+DOUBLED (0.467 vs 0.298). This is not bit-level noise, it's a real quality regression: likely
+cuDNN's fused GRU/lgamma kernels taking a different, non-bit-identical path than the CPU reference
+implementation, compounding over 40 epochs into a different local optimum. (A second architecture,
+the pinball-loss `gru_wis` in `dl_sequence_wis.py`, showed no such divergence between backends -
+so this is architecture-dependent, not universal, which makes it more dangerous, not less: you
+can't assume a given model is safe on a new backend just because another one was.) Raised to P1
+because this is no longer just a reproducibility nicety - it's a real risk of silently reporting a
+worse number (or, undetected, a *better*-looking but spurious one) if this pipeline is ever run on
+different hardware than it was validated on. `_device()` was left CPU-only for now (the pre-
+existing behavior) specifically to avoid this risk until the fix below exists.
 **How:** add a `deterministic=True` model flag that forces CPU + `torch.use_deterministic_algorithms(True)`
-+ fixed seeds, for the canonical/paper runs; keep MPS for fast iteration. Persisting weights
-(§2.4) also sidesteps this for the submission artifact.
++ fixed seeds, for the canonical/paper runs; keep MPS/CUDA for fast iteration, but require a
+before/after comparison against the CPU/deterministic result before trusting a GPU-trained number
+for anything reported. Persisting weights (§2.4) also sidesteps this for the submission artifact.
 **Effort:** half a day.
+
+### 1.5 The paper's entire Results table is stale relative to the current data — **P0** (found 2026-09-08)
+**What:** every backtest result file behind the deployed ensemble and the paper's Table
+`tab:leaderboard` (`results/metrics/baselines_scored.csv`, `lgbm_scored.csv`, `gru_scored.csv`,
+`mechanistic_scored.csv`, `final_scored.csv`, `final_leaderboard*.csv`) was generated on
+2026-09-06 22:34 - BEFORE commit `98cf72b` ("Refresh data through EW25 2026...", 2026-09-07
+01:19) updated `data/raw/data_imdc_2026/dengue.csv.gz`. None of these files were regenerated
+after that refresh. Confirmed by re-running each model fresh overnight (2026-09-08) and
+comparing: `climatological_quantile` WIS 1327 (stale) -> 1264 (current data), `naive` 1664 ->
+1557, `seasonal_naive` 1459 -> 1379, `mechanistic_traj` 1303 -> 1238 - a real, consistent ~5%
+shift across every model, not noise (each re-run is itself byte-reproducible). Root cause: this
+project's cutoff-filter backtest methodology re-derives each fold's training data from
+`load_cases()`'s CURRENT, most-recently-revised vintage every time it runs - a case-count
+revision to an already-past week (a known feature of epi surveillance reporting: recent weeks'
+counts are revised upward as delayed reports arrive) changes backtest results for a fold even
+though that fold's `train_cutoff` date itself hasn't moved. This is an accepted practice in the
+field (obtaining true historical data vintages is rarely feasible), but it means **every data
+refresh silently invalidates all previously-saved backtest numbers** until they are regenerated -
+and the paper's `imdc_paper.tex` Table~\ref{tab:leaderboard} (and the specific conformal factors
+1.03/1.00/1.23/1.73, coverage figures 47/76/88/93, and every other number quoted from that table
+in the Results/Discussion prose) was written from the stale, pre-refresh numbers and was never
+updated.
+**Why it matters:** the paper currently reports the wrong (out-of-date) headline numbers for its
+own most current dataset. The qualitative conclusions likely still hold (relative model ordering
+looks stable under a quick spot-check) but every specific figure is off by several percent, and
+the "best" conformal-widening factors, ensemble weights, and CQR calibration have not been
+re-tuned on the current data either - they're the same numbers, just now describing a dataset
+that no longer exists.
+**Done overnight (2026-09-08):** regenerated the full chain - baselines (`run_baselines.py`) ->
+LightGBM (`run_ml.py`) -> GRU (`run_dl.py`, ~80 min on CPU, the long pole) -> mechanistic
+(`run_mechanistic.py`) -> ensemble (`run_ensemble.py`, which re-tuned conformal factors and
+inverse-WIS weights on the freshly regenerated fold 1). Also found and fixed the SAME staleness
+on the dengue/chikungunya CITY tracks (`run_cities.py` -> `city_dengue_scored.csv`,
+`city_chikungunya_scored.csv`) and the chikungunya STATE track (`run_chikungunya.py` ->
+`chik_final_scored.csv`, `chik_final_leaderboard.csv`) - all shared the identical 2026-09-06 22:34
+timestamp as the dengue-state files, confirming this was a single, project-wide regeneration gap,
+not specific to one track. Chikungunya's qualitative story is unchanged after regeneration
+(`lgbm_quantile` still clearly best, WIS 79.1, ensemble still dilutes it at 89.5 - matches the
+paper's existing claim). All `*_scored.csv` files and `final_scored.csv`/`final_leaderboard*.csv`
+(both dengue-state and chikungunya-state) and both city-track files now reflect current data.
+This regeneration also
+surfaced a genuine ensemble improvement found the same night (docs/FUTURE_WORK.md Sec 6c):
+`lgbm_quantile` swapped for `xgb_quantile` in `run_ensemble.py`'s `MEMBERS`, validated under the
+fold-1 tuning discipline. The corrected, current, and improved deployed ensemble is now
+**WIS=1162.2, normWIS_all=0.561, normWIS_ex2024=0.375** (new conformal factors: 1.08/1.04/1.19/1.86
+for 50/80/90/95, vs the stale 1.03/1.00/1.23/1.73).
+**STILL OUTSTANDING:** manually sync every cited number in `imdc_paper.tex`/`imdc_paper_SI.tex`
+(Results text, Table~\ref{tab:leaderboard}, Table~\ref{tab:byfold}, Fig~\ref{fig:conformal} and
+its caption, the specific conformal-factor and coverage numbers in prose, and any other table that
+sources these files - `tab:ablation`, `tab:chik`, `tab:operational`, etc.) - deliberately NOT done
+automatically overnight, since it touches the manuscript's actual reported results and deserves
+your review rather than an unattended rewrite. Two decisions bundled together for that review: (1)
+sync the paper to the corrected data with the SAME `lgbm_quantile`-based ensemble it already
+describes, or (2) also adopt the `xgb_quantile` swap in the paper. Either way, consider building a
+script that renders the LaTeX tables directly from the CSVs rather than hand-transcribing numbers,
+to make this a non-issue on the *next* data refresh too - and a lightweight check (e.g. a recorded
+raw-data file hash alongside each `*_scored.csv`) that can detect "this result predates the
+current data" automatically, rather than relying on manually noticing file timestamps as happened
+here.
+**Effort:** CSV regeneration - done. Remaining: a half day for a careful paper-number sync.
+
+**Follow-up verification (2026-09-08, later the same day):** re-ran every remaining model not
+covered by the first pass - `prophet_model.py` (v1), `prophet_v2.py`, `sarimax_model.py` (v1),
+`sarimax_v2.py` (tune-once), `mechanistic_nsub.py`, `hierarchical.py` - to check whether they were
+ALSO affected. They were not: all five came back byte-for-byte or near-identical to their saved
+files (prophet_v1 WIS 2177.3 vs saved ~2174.7 - a 0.1% difference, consistent with cmdstanpy's own
+run-to-run optimizer noise, not staleness; prophet_v2 1520.141462 vs saved 1520.141462, exact
+match; sarimax v1 1418.6 vs 1418.6; sarimax v2 tune-once 1751.86 vs 1751.86; mechanistic_nsub
+1269.14 vs 1269.1). Root cause of the difference from the first-pass files: every one of these was
+generated DURING active development work on 2026-09-07, i.e. already after the data refresh
+(timestamps confirm this - e.g. `prophet_v2_scored.csv` is dated Sep 7 19:57, `sarimax_v2_scored.csv`
+Sep 7 18:49), whereas the stale batch (`baselines_scored.csv` etc.) was all dated Sep 6 22:34,
+before the refresh. So the staleness bug was narrower than it first looked: it only ever affected
+files nobody had touched since before the refresh, not every result file in the project.
+`sarimax_v2_perfold_scored.csv` (Sep 7 22:27, same "already fresh" cohort) was not re-verified
+given the ~2h43m cost and this now-4-for-4 confirmation pattern, but should be assumed fine on the
+same evidence unless something else changes.
+**Also resolved by this pass:** `hierarchical_scored.csv` did not exist as a saved file before -
+generated fresh, WIS=1232.1, normWIS_all=0.5948, normWIS_ex2024=0.4010 (still beats the unpooled
+`climatological_quantile`'s 0.6103, confirming the original ablation finding holds on current
+data). And the `mechanistic_traj` vs `mechanistic_nsub` choice for the paper's mechanistic entry
+(previously ambiguous - nsub won raw WIS, traj won normalized WIS, on stale data) is now decided
+cleanly: on current data, **`mechanistic_traj` wins on all three metrics** (WIS 1238.1 vs 1269.1;
+normWIS_all 0.5977 vs 0.6127; normWIS_ex2024 0.4503 vs 0.4517) - use `mechanistic_traj`, not
+`mechanistic_nsub`, as the paper's mechanistic-family entry.
+
+**Landmine described above - RESOLVED 2026-09-08.** `scripts/generate_forecast_2026_27.py` now
+imports and uses `XGBQuantileModel` (not `LGBMQuantileModel`) for the dengue-state ensemble's GBM
+member, matching both `run_ensemble.py`'s `MEMBERS` and the paper's now-adopted XGBoost swap, so it
+is consistent with the current `conformal_factors.csv` (1.08/1.04/1.19/1.86). Verified the script
+still imports and parses cleanly after the change (not run end-to-end, since doing so would write
+real forecast files). Chikungunya-state deliberately still uses `LGBMQuantileModel` - XGBoost was
+never evaluated for chikungunya, so there is no basis yet to switch it. **The already-submitted
+2026-27 forecast is still unaffected either way** - it was generated earlier with the old
+lgbm-based ensemble on the old factors, which were mutually consistent at the time. This fix only
+matters if `generate_forecast_2026_27.py` is run again in the future. Whether to actually re-run it
+and resubmit before the 2026-09-10 deadline is a separate, time-sensitive decision left to the
+user, not made here.
 
 ---
 

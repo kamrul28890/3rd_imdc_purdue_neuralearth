@@ -119,9 +119,11 @@ class MechanisticTrajectoryModel:
         # historical season trajectories: (uf) -> array (n_seasons, SEASON_LEN) of incidence,
         # keeping only complete seasons strictly before the target season
         self._trajectories = {}
+        self._season_years = {}  # (uf) -> array of season_start_year matching each trajectory row
         self._richards = []
         for uf, g in df.groupby("uf"):
             mats = []
+            years = []
             for syear, sg in g.groupby("season_start_year"):
                 if syear >= target_season_year:
                     continue
@@ -132,12 +134,14 @@ class MechanisticTrajectoryModel:
                 curve[sg["season_week"].to_numpy() - 1] = sg["incidence"].to_numpy()
                 curve = pd.Series(curve).interpolate(limit_direction="both").to_numpy()
                 mats.append(curve)
+                years.append(int(syear))
                 if self.fit_curves:
                     params = fit_richards(curve)
                     if params:
                         self._richards.append({"uf": uf, "season": int(syear), **params})
             if mats:
                 self._trajectories[uf] = np.vstack(mats)
+                self._season_years[uf] = np.array(years)
 
         # global NegBinom dispersion from historical count over-dispersion (var = mu + alpha*mu^2)
         self._alpha = self._estimate_dispersion(df)

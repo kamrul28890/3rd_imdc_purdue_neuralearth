@@ -62,8 +62,8 @@ def paired_boot(df, a, b, n=2000, folds=None):
 # ---------- DENGUE STATE ----------
 dg = _num(pd.read_csv(f"{M}/final_scored.csv", low_memory=False),
           ["wis", "observed_value", "fold_id", "horizon_weeks", "dispersion", "overprediction", "underprediction"] + [f"coverage_{L}" for L in LEVELS])
-MODELS = ["ensemble_conformal", "ensemble_vincent", "lgbm_quantile", "mechanistic_traj",
-          "climatological_quantile", "gru_negbin", "seasonal_naive", "naive"]
+MODELS = ["ensemble_conformal", "ensemble_vincent", "ensemble_invwis", "xgb_quantile", "lgbm_quantile",
+          "mechanistic_traj", "climatological_quantile", "gru_negbin", "seasonal_naive", "naive"]
 
 print("=== DENGUE bootstrap 95% CI (mean WIS; normalized WIS) ===")
 ci = bootstrap_ci(dg, MODELS)
@@ -74,8 +74,9 @@ for _, r in lb.iterrows():
 
 print("\n=== DENGUE paired bootstrap (mean per-unit WIS diff, 95% CI) ===")
 for a, b, fl, lab in [("ensemble_conformal", "ensemble_vincent", None, "conformal vs median (all)"),
-                      ("ensemble_conformal", "lgbm_quantile", None, "conformal vs LightGBM (all)"),
-                      ("gru_negbin", "lgbm_quantile", [1, 3, 4], "GRU vs LightGBM (ordinary)"),
+                      ("ensemble_conformal", "xgb_quantile", None, "conformal vs XGBoost (all)"),
+                      ("gru_negbin", "xgb_quantile", [1, 3, 4], "GRU vs XGBoost (ordinary)"),
+                      ("xgb_quantile", "lgbm_quantile", None, "XGBoost vs LightGBM (all)"),
                       ("ensemble_conformal", "naive", None, "conformal vs naive (all)")]:
     d, lo, hi = paired_boot(dg, a, b, folds=fl)
     sig = "significant" if (lo < 0) == (hi < 0) else "n.s."
@@ -84,7 +85,7 @@ for a, b, fl, lab in [("ensemble_conformal", "ensemble_vincent", None, "conforma
 print("\n=== DENGUE normalized WIS by horizon bin (ordinary seasons, folds 1/3/4) ===")
 ordn = dg[dg.fold_id != 2].copy()
 ordn["hbin"] = pd.cut(ordn.horizon_weeks, [15, 27, 39, 51, 67], labels=["16-27", "28-39", "40-51", "52-67"])
-for m in ["ensemble_conformal", "gru_negbin", "lgbm_quantile", "climatological_quantile"]:
+for m in ["ensemble_conformal", "gru_negbin", "xgb_quantile", "climatological_quantile"]:
     s = ordn[ordn.model == m]
     vals = s.groupby("hbin", observed=True).apply(lambda x: x.wis.sum() / x.observed_value.sum(), include_groups=False)
     print(f"  {m:24s} " + "  ".join(f"{b}:{vals.get(b, float('nan')):.3f}" for b in ["16-27", "28-39", "40-51", "52-67"]))

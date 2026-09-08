@@ -20,7 +20,7 @@ from imdc.evaluation.metrics import (
     total_cases_error,
 )
 
-MODELS = ["naive", "seasonal_naive", "climatological_quantile", "lgbm_quantile", "gru_negbin",
+MODELS = ["naive", "seasonal_naive", "climatological_quantile", "xgb_quantile", "gru_negbin",
           "mechanistic_traj", "ensemble_vincent", "ensemble_conformal"]
 
 

@@ -1,9 +1,9 @@
 model,onset_week_mae,onset_week_median,peak_week_mae,peak_magnitude_median_log,total_cases_median_log,total_cases_iqr_log
-naive,4.519,0.0,16.173,-1.006,0.0,1.661
-seasonal_naive,3.673,0.0,4.625,-0.862,-0.339,1.205
-climatological_quantile,3.625,0.0,4.413,-0.954,-0.349,1.173
-lgbm_quantile,3.058,0.0,4.712,-0.542,-0.081,1.183
-gru_negbin,3.875,0.0,5.183,-0.617,-0.173,1.074
-mechanistic_traj,3.692,0.0,5.048,-1.426,-0.77,1.137
-ensemble_vincent,3.288,0.0,4.596,-0.734,-0.221,1.069
-ensemble_conformal,3.288,0.0,4.596,-0.734,-0.221,1.069
+naive,4.856,0.0,17.404,-1.128,-0.144,1.579
+seasonal_naive,4.221,0.0,4.769,-0.821,-0.296,1.313
+climatological_quantile,4.221,0.0,4.471,-0.852,-0.322,1.304
+xgb_quantile,3.663,0.0,5.269,-0.546,-0.006,1.292
+gru_negbin,4.087,0.0,5.0,-0.59,-0.117,1.304
+mechanistic_traj,4.144,0.0,5.038,-1.43,-0.83,1.325
+ensemble_vincent,3.846,0.0,4.875,-0.707,-0.223,1.223
+ensemble_conformal,3.846,0.0,4.875,-0.707,-0.223,1.223

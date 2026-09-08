@@ -23,14 +23,14 @@ STABILITY_BASELINE = "seasonal_naive"
 
 INK, MUTED, GRID = "#0b0b0b", "#898781", "#e1e0d9"
 C = {"naive": "#b8b6ae", "seasonal_naive": "#eda100", "climatological_quantile": "#2a78d6",
-     "lgbm_quantile": "#e34948", "gru_negbin": "#1baf7a", "mechanistic_traj": "#4a3aa7",
+     "xgb_quantile": "#e34948", "gru_negbin": "#1baf7a", "mechanistic_traj": "#4a3aa7",
      "ensemble_vincent": "#898781", "ensemble_conformal": "#0b0b0b"}
 LAB = {"naive": "Naive", "seasonal_naive": "Seasonal-naive", "climatological_quantile": "Climatological",
-       "lgbm_quantile": "LightGBM", "gru_negbin": "GRU", "mechanistic_traj": "Mechanistic",
+       "xgb_quantile": "XGBoost", "gru_negbin": "GRU", "mechanistic_traj": "Mechanistic",
        "ensemble_vincent": "Ensemble (median)", "ensemble_conformal": "Ensemble (conformal)"}
 ORDER = list(C.keys())
 SLOPE = ["ensemble_conformal", "ensemble_vincent", "climatological_quantile",
-         "lgbm_quantile", "mechanistic_traj", "gru_negbin"]
+         "xgb_quantile", "mechanistic_traj", "gru_negbin"]
 
 
 def _style():

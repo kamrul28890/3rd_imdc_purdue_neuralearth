@@ -23,6 +23,7 @@ from imdc.evaluation.baselines import ClimatologicalQuantileModel
 from imdc.evaluation.postprocess import apply_conformal_widen, clip_nonnegative
 from imdc.models.dl_sequence import DLSequenceModel
 from imdc.models.ml_boosted import LGBMQuantileModel
+from imdc.models.xgb_quantile import XGBQuantileModel
 from imdc.submission.build import build_submission_frame
 from imdc.submission.forecast import city_single_forecast, state_ensemble_forecast, state_single_forecast
 from imdc.submission.validate import SubmissionError, validate_submission
@@ -34,9 +35,13 @@ def _load_conformal_factors() -> dict:
     """Fold-1-tuned multiplicative widening factors (see docs/PLAN.md Phase 6 / run_ensemble.py).
 
     This is the "ensemble + conformal recalibration" model the README/paper document as the
-    chosen dengue-state model (WIS 1216 vs 1281 for plain Vincentization) - applying it here
+    chosen dengue-state model (WIS 1162 vs 1234 for plain Vincentization, current data as of
+    2026-09-08 - see docs/IMPROVEMENTS.md Sec 1.5) - applying it here
     (not just at backtest-scoring time) is what actually makes the real forecast match that
-    documented methodology.
+    documented methodology. These factors are tuned for the climatological+XGBoost+GRU ensemble
+    below; if the ensemble's GBM member ever changes again, re-run run_ensemble.py first so this
+    file and conformal_factors.csv stay consistent (see docs/IMPROVEMENTS.md Sec 1.5's "landmine"
+    note for why this matters).
     """
     s = pd.read_csv(METRICS_DIR / "conformal_factors.csv", index_col="interval_level")["factor"]
     return {int(k): float(v) for k, v in s.items()}
@@ -73,10 +78,10 @@ def main():
           f"chikungunya={c5.train_cutoff.date()}")
     print(f"target window: {d5.target_start.date()} -> {d5.target_end.date()}")
 
-    print("\ndengue state (ensemble: climatological+lgbm+gru) — fitting on data through EW25 2026...")
+    print("\ndengue state (ensemble: climatological+xgboost+gru) — fitting on data through EW25 2026...")
     members = [
         ("climatological", ClimatologicalQuantileModel),
-        ("lgbm", lambda: LGBMQuantileModel(disease="dengue")),
+        ("xgboost", lambda: XGBQuantileModel(disease="dengue")),
         ("gru", lambda: DLSequenceModel(disease="dengue", n_ensemble=5, epochs=30)),
     ]
     ensemble_wide = state_ensemble_forecast(d5, "dengue", members, ufs=MANDATORY_UFS)

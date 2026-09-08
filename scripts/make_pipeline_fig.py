@@ -48,7 +48,7 @@ def main():
                     "Synthetic-origin\ntraining panel\n(weekly origins ×\nhorizons 1–67)")
 
     b_base = _box(ax, (5.65, 3.55), 1.9, 0.6, "Climatological\n(+ naive baselines)", fontsize=8.5)
-    b_lgbm = _box(ax, (5.65, 2.85), 1.9, 0.6, "LightGBM + CQR", fontsize=8.7)
+    b_lgbm = _box(ax, (5.65, 2.85), 1.9, 0.6, "XGBoost + CQR", fontsize=8.7)
     b_gru = _box(ax, (5.65, 2.15), 1.9, 0.6, "GRU deep ensemble", fontsize=8.7)
     b_mech = _box(ax, (5.65, 1.45), 1.9, 0.6, "Mechanistic\n(Richards bootstrap)", fontsize=8.5)
 

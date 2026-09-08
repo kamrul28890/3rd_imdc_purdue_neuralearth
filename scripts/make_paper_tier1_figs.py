@@ -11,22 +11,23 @@ from imdc.config import FIGURES_DIR, METRICS_DIR
 
 INK, MUTED = "#0b0b0b", "#898781"
 LAB = {"ensemble_conformal": "Ensemble (conformal)", "ensemble_vincent": "Ensemble (median)",
-       "lgbm_quantile": "LightGBM", "mechanistic_traj": "Mechanistic",
+       "xgb_quantile": "XGBoost", "mechanistic_traj": "Mechanistic",
        "climatological_quantile": "Climatological", "gru_negbin": "GRU",
        "seasonal_naive": "Seasonal-naive", "naive": "Naive"}
-COL = {"ensemble_conformal": "#0b0b0b", "gru_negbin": "#1baf7a", "lgbm_quantile": "#e34948",
+COL = {"ensemble_conformal": "#0b0b0b", "gru_negbin": "#1baf7a", "xgb_quantile": "#e34948",
        "climatological_quantile": "#2a78d6"}
 
 # Bootstrap results from paper_tier1_stats.py (block bootstrap over (state,season) tasks, seed 42).
 NWIS_CI = {  # model: (point, lo, hi)
-    "ensemble_conformal": (0.555, 0.404, 0.635), "ensemble_vincent": (0.585, 0.412, 0.675),
-    "lgbm_quantile": (0.593, 0.466, 0.659), "mechanistic_traj": (0.595, 0.484, 0.655),
-    "climatological_quantile": (0.606, 0.462, 0.683), "gru_negbin": (0.627, 0.401, 0.757),
-    "seasonal_naive": (0.666, 0.531, 0.737), "naive": (0.760, 0.694, 0.812)}
+    "ensemble_conformal": (0.561, 0.423, 0.639), "ensemble_vincent": (0.595, 0.438, 0.684),
+    "xgb_quantile": (0.575, 0.447, 0.654), "mechanistic_traj": (0.598, 0.491, 0.657),
+    "climatological_quantile": (0.610, 0.475, 0.687), "gru_negbin": (0.673, 0.460, 0.797),
+    "seasonal_naive": (0.666, 0.535, 0.737), "naive": (0.752, 0.683, 0.802)}
 PAIRED = [  # label, diff, lo, hi
-    ("Conformal $-$ median ensemble", -64.8, -79.5, -50.1),
-    ("Conformal $-$ LightGBM", -83.5, -115.8, -53.4),
-    ("GRU $-$ LightGBM (ordinary seasons)", -153.3, -215.8, -97.8)]
+    ("Conformal $-$ median ensemble", -71.3, -87.8, -56.9),
+    ("Conformal $-$ XGBoost", -27.9, -47.3, -8.8),
+    ("GRU $-$ XGBoost (ordinary seasons)", -48.9, -87.4, -14.9),
+    ("XGBoost $-$ LightGBM", -111.1, -143.0, -81.6)]
 
 
 def significance_fig():
@@ -66,7 +67,7 @@ def robustness_fig():
     ordn = dg[dg.fold_id != 2].copy()
     bins, labels = [15, 27, 39, 51, 67], ["16-27", "28-39", "40-51", "52-67"]
     ordn["hbin"] = pd.cut(ordn.horizon_weeks, bins, labels=labels)
-    for m in ["ensemble_conformal", "gru_negbin", "lgbm_quantile", "climatological_quantile"]:
+    for m in ["ensemble_conformal", "gru_negbin", "xgb_quantile", "climatological_quantile"]:
         s = ordn[ordn.model == m]
         v = s.groupby("hbin", observed=True).apply(lambda x: x.wis.sum() / x.observed_value.sum(), include_groups=False)
         axA.plot(labels, [v.get(b, np.nan) for b in labels], "o-", color=COL[m], label=LAB[m], lw=2, markersize=5)
