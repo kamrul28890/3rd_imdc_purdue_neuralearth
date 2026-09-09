@@ -353,9 +353,30 @@ already-submitted forecast or the paper's reproducibility claims depend on.
 fully described by a config object that also gets stamped into the provenance manifest.
 **Effort:** 1 day.
 
-### 3.5 No CI, no linting, no logging — **P2**
+### 3.5 No CI, no linting, no logging — **PARTLY RESOLVED** (2026-09-09; was P2)
 **How:** add a GitHub Actions workflow (`pytest -m "not slow"`, `ruff`, `mypy` on push); adopt
 `ruff` for formatting/lint; replace `print` in scripts with the `logging` module.
+**Done (2026-09-09):** `.github/workflows/ci.yml` - a `fast` job runs `ruff check` +
+`pytest -m "not slow"` on every push/PR (~55s); a `full-nightly` job runs the complete suite
+(including `@pytest.mark.slow`, ~6 min) on a nightly cron plus manual dispatch. Added
+`[tool.ruff]` to `pyproject.toml` with a deliberately **narrow** rule set (`E9` syntax errors +
+`F` pyflakes, i.e. real bugs/undefined names) rather than a full style ruleset - running the
+narrow set today found zero violations, so CI starts green; widening it later is a one-line
+config change whenever there's appetite for the resulting diff. Also fixed a real, unrelated
+gap this surfaced: `pyproject.toml`'s `dependencies` was missing `epiweeks`, `torch`,
+`python-dotenv`, and `joblib` despite all four being genuinely imported across `src/` (an AST
+scan of every top-level import in `src/` was used to check, not a guess) - a clean-machine
+`pip install -e .` would have failed. `prophet` (used by exactly two exploratory,
+non-deployed models, lazily imported inside their `fit()`) was added as an optional
+`[project.optional-dependencies] prophet` extra instead of a hard dependency, since it needs a
+cmdstan toolchain and nothing else in the package requires it importable to install/test.
+Verified `pip install --dry-run -e ".[test]"` resolves cleanly.
+**Not done:** `mypy` (Sec 3.1 left this for here; still no type-checking step - would need a
+first pass to see how much the current type-hint coverage already satisfies before deciding a
+ruleset) and the `print` → `logging` migration across the `run_*.py` scripts (wide, low-risk-
+but-also-low-value churn across every script the day of a live deadline; the scripts' `print`
+output is only ever read by a human running them locally, not consumed programmatically, so
+this is cosmetic rather than a real gap).
 **Effort:** half a day (CI + ruff), ongoing.
 
 ---
@@ -364,11 +385,28 @@ fully described by a config object that also gets stamped into the provenance ma
 
 Current suite is solid on **leakage, WIS correctness, determinism, and per-model smoke**, but:
 
-### 4.1 Tests are integration-heavy and slow (10 min) — **P1**
+### 4.1 Tests are integration-heavy and slow (10 min) — **PARTLY RESOLVED** (2026-09-09; was P1)
 **What:** most tests hit real gzip data and train real models.
 **How:** add a `tests/fixtures/` synthetic mini-dataset (a few states, ~150 weeks) and unit
 tests that run in milliseconds; mark the real-data ones `@pytest.mark.slow` and run only fast
 ones on every push, slow ones nightly. Pairs with §2.1 to cut time further.
+**Done (2026-09-09):** profiled the full suite (`pytest --durations=30`) and marked the actually
+slow tests `@pytest.mark.slow`: `test_determinism.py::test_lgbm_is_bit_deterministic` (~234s -
+fits LightGBM on the real state panel twice), all of `test_ml_boosted.py` (~111s shared
+module-scoped fixture - LGBM trains on the full 26-state panel regardless of the `ufs` filter,
+only the target grid is restricted), `test_dl_sequence.py`'s fixture-dependent tests plus the
+new determinism test (~24-46s each, real GRU fits), and
+`test_folds_and_leakage.py::test_climate_table_has_no_fold_flags_and_needs_manual_cutoff`
+(~24s - loads the real climate table). `pytest -m "not slow"` (the new CI `fast` job, Sec 3.5)
+now runs 107 tests in ~55s, down from the full suite's ~8min for 118; `pytest -m slow` runs the
+remaining 11 in ~6min, now relegated to the nightly CI job instead of every push.
+**Not done:** the actual `tests/fixtures/` synthetic mini-dataset. Marking existing slow tests
+gets the every-push CI loop to under a minute, which is most of this item's practical value;
+the synthetic dataset would let those *specific* real-data/real-model tests themselves run in
+milliseconds too, but building one that's realistic enough to keep every model family's tests
+meaningful (right schema across cases/population/climate/ocean-indices, right leakage-relevant
+date structure) is genuinely the "1 day" of effort the estimate says, not something to build
+carefully under the current deadline pressure. Deferred, not abandoned.
 **Effort:** 1 day.
 
 ### 4.2 Coverage gaps — **P2**

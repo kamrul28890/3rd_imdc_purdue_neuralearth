@@ -24,6 +24,7 @@ def _wis_sum(model_factory, disease="dengue"):
     return score_backtest(preds, disease=disease, folds=fold1)["wis"].sum()
 
 
+@pytest.mark.slow  # ~4 min: fits LightGBM on the real state panel twice
 def test_lgbm_is_bit_deterministic():
     a = _wis_sum(lambda: LGBMQuantileModel(disease="dengue"))
     b = _wis_sum(lambda: LGBMQuantileModel(disease="dengue"))

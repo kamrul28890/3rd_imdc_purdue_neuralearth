@@ -15,6 +15,10 @@ from imdc.models.ml_boosted import LGBMQuantileModel
 
 SMALL_UFS = ["SP", "RJ", "AC"]
 
+# LGBM trains on the full 26-state panel regardless of `ufs` (only the target grid is
+# restricted) - the module-scoped fixture below costs ~110s. See IMPROVEMENTS.md Sec 4.1.
+pytestmark = pytest.mark.slow
+
 
 @pytest.fixture(scope="module")
 def fold1():

@@ -44,26 +44,31 @@ def dl_scored():
     return score_backtest(preds, disease="dengue", folds=fold1)
 
 
+@pytest.mark.slow  # shares the ~24s dl_scored fixture (real data, real GRU fit)
 def test_predictions_non_negative_and_finite(dl_scored):
     vals = dl_scored[QUANTILE_COLUMNS].to_numpy()
     assert (vals >= 0).all()
     assert np.isfinite(vals).all()
 
 
+@pytest.mark.slow
 def test_quantiles_monotonic(dl_scored):
     monotone = enforce_monotonicity(dl_scored)
     assert monotone.attrs["frac_rows_needing_reordering"] == pytest.approx(0.0)
 
 
+@pytest.mark.slow
 def test_covers_all_requested_states(dl_scored):
     assert set(dl_scored["uf"].unique()) == set(SMALL_UFS)
 
 
+@pytest.mark.slow
 def test_wis_finite(dl_scored):
     assert np.isfinite(dl_scored["wis"]).all()
     assert (dl_scored["wis"] >= 0).all()
 
 
+@pytest.mark.slow  # two full GRU fits (~46s)
 def test_deterministic_flag_is_reproducible():
     """deterministic=True (IMPROVEMENTS.md Sec 1.4) must give the same predictions run to run.
 

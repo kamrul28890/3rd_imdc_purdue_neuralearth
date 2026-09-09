@@ -1,0 +1,46 @@
+name: CI
+
+# IMPROVEMENTS.md Sec 3.5: fast tests + lint on every push/PR; the full suite (including
+# @pytest.mark.slow - real-data/real-model determinism checks, ~6 min) runs nightly instead,
+# so a push doesn't wait on those but they're still checked regularly.
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "17 7 * * *"  # nightly, arbitrary off-peak minute
+  workflow_dispatch: {}
+
+env:
+  KMP_DUPLICATE_LIB_OK: "TRUE"  # torch + lightgbm both link libomp
+
+jobs:
+  fast:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install CPU-only torch (avoids the much larger CUDA wheel)
+        run: pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Install package + test deps
+        run: pip install -e ".[test]"
+      - name: Lint (ruff)
+        run: ruff check src/ tests/ scripts/
+      - name: Fast tests
+        run: pytest -m "not slow" -q
+
+  full-nightly:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install CPU-only torch (avoids the much larger CUDA wheel)
+        run: pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Install package + test deps
+        run: pip install -e ".[test]"
+      - name: Full test suite (including @pytest.mark.slow)
+        run: pytest -q

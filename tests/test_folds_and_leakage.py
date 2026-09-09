@@ -68,6 +68,7 @@ def test_explicit_cutoff_has_no_gap_week_leakage(dengue_df, folds):
     assert_gap_weeks_absent(correctly_filtered, fold)
 
 
+@pytest.mark.slow  # loads the real climate table (~24s)
 def test_climate_table_has_no_fold_flags_and_needs_manual_cutoff(folds):
     climate = load_climate()
     assert "train_1" not in climate.columns

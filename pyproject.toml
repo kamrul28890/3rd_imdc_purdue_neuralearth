@@ -21,10 +21,34 @@ dependencies = [
     "seaborn",
     "plotly",
     "mosqlient",
+    "epiweeks",
+    "torch",
+    "python-dotenv",
+    "joblib",
 ]
+
+[project.optional-dependencies]
+# Prophet needs a cmdstan toolchain and is only used by two exploratory, non-deployed models
+# (prophet_model.py/prophet_v2.py - see FUTURE_WORK.md Sec 6c); everything else imports it
+# lazily inside fit(), so it's never required just to install/import/test this package.
+prophet = ["prophet"]
+test = ["pytest", "ruff"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "slow: hits real gzip data and/or trains a real model twice for a determinism check; excluded from the every-push `pytest -m \"not slow\"` CI run (IMPROVEMENTS.md Sec 3.5/4.1).",
+]
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+
+[tool.ruff.lint]
+# Start narrow (IMPROVEMENTS.md Sec 3.5): real bugs (F) and undefined-name/import errors, not a
+# full style rewrite of an existing, working, competition-deadline-adjacent codebase in one pass.
+select = ["E9", "F"]
+ignore = ["F401", "F841"]  # unused imports/locals: real in a few files (see Sec 3.5 note), not bugs
