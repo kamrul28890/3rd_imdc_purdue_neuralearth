@@ -12,7 +12,7 @@ import pandas as pd
 import pytest
 
 from imdc.data.folds import get_folds
-from imdc.features.panel import build_panel
+from imdc.features.panel import OBSERVED_CLIMATE_COLS, build_panel, build_prediction_features
 
 SMALL_UFS = ["SP", "RJ"]
 
@@ -28,6 +28,27 @@ def test_no_label_or_origin_beyond_cutoff(panel_fold1):
     fold, panel, _ = panel_fold1
     assert panel["target_date"].max() <= fold.train_cutoff
     assert panel["origin_date"].max() <= fold.train_cutoff
+
+
+def test_exclude_cols_drops_columns_from_feature_list_not_from_data(panel_fold1):
+    """Paper climate-covariate ablation hook: exclude_cols removes columns from the model's
+    feature list (so X = feats[feature_cols] never sees them) without touching `feats` itself.
+    """
+    fold, panel, feature_cols = panel_fold1
+    assert set(OBSERVED_CLIMATE_COLS) <= set(feature_cols)  # present by default
+    assert set(OBSERVED_CLIMATE_COLS) <= set(panel.columns)
+
+    _, excluded_cols = build_panel(fold, ufs=SMALL_UFS, exclude_cols=OBSERVED_CLIMATE_COLS)
+    assert not (set(OBSERVED_CLIMATE_COLS) & set(excluded_cols))
+    assert set(excluded_cols) == set(feature_cols) - set(OBSERVED_CLIMATE_COLS)
+
+
+def test_exclude_cols_also_applies_to_prediction_features(panel_fold1):
+    fold, _, _ = panel_fold1
+    grid = pd.DataFrame({"uf": SMALL_UFS, "date": [fold.target_start] * len(SMALL_UFS),
+                         "horizon_weeks": [1] * len(SMALL_UFS)})
+    _, feature_cols = build_prediction_features(fold, grid, exclude_cols=OBSERVED_CLIMATE_COLS)
+    assert not (set(OBSERVED_CLIMATE_COLS) & set(feature_cols))
 
 
 def test_lags_come_from_continuous_history_not_gapped_window(panel_fold1):

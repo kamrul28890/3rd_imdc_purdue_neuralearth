@@ -48,13 +48,17 @@ class XGBQuantileModel:
     def __init__(self, params: dict = None, n_estimators: int = DEFAULT_N_ESTIMATORS,
                  quantile_levels: list = QUANTILE_LEVELS, disease: str = "dengue",
                  calibrate: bool = True, calib_weeks: int = 78, sillas_weights: bool = False,
-                 sillas_recency: bool = True, sillas_extreme: bool = True):
+                 sillas_recency: bool = True, sillas_extreme: bool = True,
+                 exclude_cols: list = None):
         self.params = {**DEFAULT_PARAMS, **(params or {})}
         self.n_estimators = n_estimators
         self.quantile_levels = list(quantile_levels)
         self.disease = disease
         self.calibrate = calibrate
         self.calib_weeks = calib_weeks
+        # feature ablation hook (e.g. paper's climate-covariate ablation): drop these columns
+        # from the feature set entirely, not just zero them out. None = normal feature set.
+        self.exclude_cols = exclude_cols
         # Sample-weighting scheme from the "XGBSillas" (FGV-EMAp) team, reviewed for the idea
         # (not their code) - see docs/FUTURE_WORK.md Sec 6b. Two components: (1) recency -
         # up-weight rows whose origin is close to the fold's own cutoff, since those origins'
@@ -89,7 +93,7 @@ class XGBQuantileModel:
 
     def fit(self, train_df: pd.DataFrame, fold) -> "XGBQuantileModel":
         self._fold = fold
-        panel, feature_cols = build_panel(fold, disease=self.disease)
+        panel, feature_cols = build_panel(fold, disease=self.disease, exclude_cols=self.exclude_cols)
         self._feature_cols = feature_cols
 
         if self.calibrate:
@@ -131,7 +135,8 @@ class XGBQuantileModel:
             self._cqr_adjust[hi_tau] = +q
 
     def predict(self, target_grid: pd.DataFrame, quantile_levels: list = None) -> pd.DataFrame:
-        feats, feature_cols = build_prediction_features(self._fold, target_grid, disease=self.disease)
+        feats, feature_cols = build_prediction_features(self._fold, target_grid, disease=self.disease,
+                                                        exclude_cols=self.exclude_cols)
         X = feats[feature_cols]
 
         preds_log = self._predict_raw(X)

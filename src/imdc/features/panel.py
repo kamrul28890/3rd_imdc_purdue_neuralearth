@@ -275,6 +275,11 @@ FEATURE_COLS = (
     + ECMWF_COLS
 )
 
+# The observed-climate covariates (as opposed to ENSO/IOD/PDO ocean indices or the ECMWF
+# *forecast*): paper Table tab:ablation's "observed-climate covariates" ablation is "with vs.
+# without these 4 columns" - see build_panel/build_prediction_features's `exclude_cols`.
+OBSERVED_CLIMATE_COLS = ["temp_med_roll4", "precip_med_roll4", "rel_humid_med_roll4", "temp_anomaly"]
+
 
 def _attach_static(feats: pd.DataFrame, pop: pd.DataFrame) -> pd.DataFrame:
     static = state_static_features()
@@ -291,8 +296,15 @@ def _attach_static(feats: pd.DataFrame, pop: pd.DataFrame) -> pd.DataFrame:
 
 
 def build_panel(fold: Fold, disease: str = "dengue", ufs: list = MANDATORY_UFS,
-                min_origin: str = "2014-01-01", max_horizon: int = MAX_HORIZON):
-    """Training panel for one fold: every (uf, origin, horizon) with an observed label <= cutoff."""
+                min_origin: str = "2014-01-01", max_horizon: int = MAX_HORIZON,
+                exclude_cols: list = None):
+    """Training panel for one fold: every (uf, origin, horizon) with an observed label <= cutoff.
+
+    `exclude_cols`: feature names to drop from the returned feature-column list (the columns
+    are still computed into `feats`, just not offered to the model) - e.g.
+    `OBSERVED_CLIMATE_COLS` for the paper's climate-covariate ablation. None (default) is the
+    normal, unchanged feature set.
+    """
     origin_df = _origin_anchored_series(fold, disease)
     origin_df = origin_df[origin_df["uf"].isin(ufs)]
     anchor_lookup = _seasonal_anchor_lookup(origin_df)
@@ -314,11 +326,18 @@ def build_panel(fold: Fold, disease: str = "dengue", ufs: list = MANDATORY_UFS,
     feats, static_cols = _attach_static(feats, pop)
     feats = _attach_ecmwf(feats)
     feats = feats.dropna(subset=["label"])
-    return feats, FEATURE_COLS + static_cols
+    feature_cols = FEATURE_COLS + static_cols
+    if exclude_cols:
+        feature_cols = [c for c in feature_cols if c not in exclude_cols]
+    return feats, feature_cols
 
 
-def build_prediction_features(fold: Fold, target_grid: pd.DataFrame, disease: str = "dengue"):
-    """Features for the real target: origin = train_cutoff, horizons/dates from target_grid."""
+def build_prediction_features(fold: Fold, target_grid: pd.DataFrame, disease: str = "dengue",
+                              exclude_cols: list = None):
+    """Features for the real target: origin = train_cutoff, horizons/dates from target_grid.
+
+    `exclude_cols`: see `build_panel` - must match what the model was fit with.
+    """
     origin_df = _origin_anchored_series(fold, disease)
     anchor_lookup = _seasonal_anchor_lookup(origin_df)
     pop = state_population()
@@ -330,4 +349,7 @@ def build_prediction_features(fold: Fold, target_grid: pd.DataFrame, disease: st
     feats = _assemble_rows(origin_df, pairs, anchor_lookup, with_label=False)
     feats, static_cols = _attach_static(feats, pop)
     feats = _attach_ecmwf(feats)
-    return feats, FEATURE_COLS + static_cols
+    feature_cols = FEATURE_COLS + static_cols
+    if exclude_cols:
+        feature_cols = [c for c in feature_cols if c not in exclude_cols]
+    return feats, feature_cols
