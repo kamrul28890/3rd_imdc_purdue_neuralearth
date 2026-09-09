@@ -320,12 +320,30 @@ already-uploaded submission. Worth doing later, without deadline pressure, with 
 callers re-verified individually.
 **Effort:** 1 day.
 
-### 3.3 Seven near-duplicate `run_*.py` scripts — **P2**
+### 3.3 Seven near-duplicate `run_*.py` scripts — **PARTLY RESOLVED** (2026-09-09; was P2)
 **What:** `run_baselines/run_ml/run_dl/run_mechanistic/run_ensemble/run_chikungunya/run_cities`
 share ~80% boilerplate.
 **How:** one parametrized CLI: `python -m imdc.run --stage backtest --model lgbm --disease dengue`
 (argparse or Typer), with a registry mapping model names → factories. Collapses 7 files into
 one + a table.
+**Done (2026-09-09):** added `imdc/run.py` - `python -m imdc.run --model <name> --disease
+<dengue|chikungunya> [--ufs ...] [--out path.csv]`, plus `--list`. `MODEL_REGISTRY` maps 16
+model names to factories (all the ones registered in `imdc.run.MODEL_REGISTRY`, spanning every
+model family in `imdc/models/` and `evaluation/baselines.py`), with heavy per-model imports
+(torch, statsmodels, prophet's cmdstanpy) done lazily inside each factory so `--list` and
+unrelated models stay fast and don't require every optional dependency installed.
+`tests/test_run_cli.py` (5 tests) covers registry coverage, that every factory constructs
+without needing to fit, an end-to-end run of a fast model, `--list`, and the missing-`--model`
+argparse error.
+**Deliberately did NOT touch the 7 existing scripts or the Makefile.** They're wired into
+`make reproduce` and the paper/README's reproducibility claims, and each has its own bespoke
+"merge into the combined leaderboard" behavior (which prior `_scored.csv` files to read and
+concatenate) that this CLI doesn't try to replicate - collapsing them for real means deciding
+what happens to that behavior, then re-validating each of the 7 Makefile-invoked stages
+individually, which is real additional work best done without deadline pressure. This is
+additive: a new model/experiment can go through the registry instead of a copy-pasted script,
+which is the actual pain point the item exists to fix, without touching anything the
+already-submitted forecast or the paper's reproducibility claims depend on.
 **Effort:** half a day.
 
 ### 3.4 Scattered configuration — **P2**
