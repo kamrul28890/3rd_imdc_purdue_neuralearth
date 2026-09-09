@@ -62,3 +62,22 @@ def test_covers_all_requested_states(dl_scored):
 def test_wis_finite(dl_scored):
     assert np.isfinite(dl_scored["wis"]).all()
     assert (dl_scored["wis"] >= 0).all()
+
+
+def test_deterministic_flag_is_reproducible():
+    """deterministic=True (IMPROVEMENTS.md Sec 1.4) must give the same predictions run to run.
+
+    Regression guard for the backend-divergence bug: MPS/CUDA gave a genuinely different
+    trained model than CPU for this architecture (not bit-level noise). Tolerance is not
+    exact-equality because CPU BLAS reduction order can still vary a few ULPs across threads;
+    that's a different, much smaller effect than the backend divergence this flag fixes.
+    """
+    fold1 = [get_folds("dengue")[0]]
+    model_factory = lambda: DLSequenceModel(disease="dengue", n_ensemble=1, epochs=3,
+                                            deterministic=True)
+    preds1 = run_backtest(model_factory, fold1, disease="dengue", ufs=SMALL_UFS)
+    preds2 = run_backtest(model_factory, fold1, disease="dengue", ufs=SMALL_UFS)
+    sort_cols = ["uf", "date", "quantile_level"]
+    a = preds1.sort_values(sort_cols)["predicted_value"].to_numpy()
+    b = preds2.sort_values(sort_cols)["predicted_value"].to_numpy()
+    np.testing.assert_allclose(a, b, atol=1e-5, rtol=1e-5)

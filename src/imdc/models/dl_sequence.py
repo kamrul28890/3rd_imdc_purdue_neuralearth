@@ -36,7 +36,12 @@ HORIZONS = np.arange(1, 68)
 _SEQ_NUMERIC = ["log_inc", "temp_med", "precip_med", "rel_humid_med"]
 
 
-def _device():
+def _device(deterministic: bool = False):
+    if deterministic:
+        # MPS/CUDA (see IMPROVEMENTS.md Sec 1.4) give a genuinely different, non-bit-identical
+        # trained model than CPU for this architecture, not just numerical noise - CPU-only is
+        # required for a reproducible result, not an optional nicety.
+        return torch.device("cpu")
     if torch.backends.mps.is_available():
         return torch.device("mps")
     return torch.device("cpu")
@@ -121,7 +126,13 @@ class DLSequenceModel:
     def __init__(self, disease: str = "dengue", n_ensemble: int = 5, hidden: int = 48,
                  seq_len: int = SEQ_LEN, epochs: int = 40, lr: float = 1e-3,
                  min_origin: str = "2014-01-01", quantile_levels: list = QUANTILE_LEVELS,
-                 seed: int = 0, calibrate: bool = False, calib_weeks: int = 78):
+                 seed: int = 0, calibrate: bool = False, calib_weeks: int = 78,
+                 deterministic: bool = False):
+        """deterministic=True forces CPU + torch.use_deterministic_algorithms(True) so the
+        trained model is bit-reproducible run to run (IMPROVEMENTS.md Sec 1.4: MPS/CUDA gave a
+        meaningfully different, non-bit-identical result for this architecture, not just noise).
+        Use it for the canonical/paper-reported run; leave it off for fast local iteration.
+        """
         self.disease = disease
         self.n_ensemble = n_ensemble
         self.hidden = hidden
@@ -133,6 +144,9 @@ class DLSequenceModel:
         self.seed = seed
         self.calibrate = calibrate
         self.calib_weeks = calib_weeks
+        self.deterministic = deterministic
+        if self.deterministic:
+            torch.use_deterministic_algorithms(True)
         self._models = []
         self._fold = None
         # per-interval additive widening in log1p-count space (CQR); 0 = no adjustment
@@ -201,7 +215,7 @@ class DLSequenceModel:
                 labels.append(lab); masks.append(valid.astype(float)); pops.append(pv)
                 origin_dates.append(dates[t])
 
-        dev = _device()
+        dev = _device(self.deterministic)
         seqs = torch.tensor(np.array(seqs), dtype=torch.float32, device=dev)
         state_idx = torch.tensor(np.array(state_idx), dtype=torch.long, device=dev)
         statics_t = torch.tensor(np.array(statics), dtype=torch.float32, device=dev)
@@ -280,7 +294,7 @@ class DLSequenceModel:
         fold = self._fold
         weekly, series, static = self._assemble(fold, self.disease)
         L = self.seq_len
-        dev = _device()
+        dev = _device(self.deterministic)
 
         # one sequence per state (ending at cutoff), decode the target grid's dates
         rows = []

@@ -72,7 +72,7 @@ truncated window and the submitted fold-4 forecast is unscoreable until the seas
 refreshed data arrives.
 **Effort:** 1–2 h.
 
-### 1.4 GRU is not bit-reproducible (MPS/CUDA) — **P1** (raised from P2, 2026-09-08)
+### 1.4 GRU is not bit-reproducible (MPS/CUDA) — **RESOLVED** (fixed 2026-09-09; was P1)
 **What:** documented, but the GRU still varies run-to-run on Apple MPS. Extended overnight
 (2026-09-08): this machine's `_device()` only ever checked MPS, never CUDA, so `gru_negbin` had
 always trained on CPU despite a CUDA-capable GPU being available. Adding a CUDA check and
@@ -92,6 +92,18 @@ existing behavior) specifically to avoid this risk until the fix below exists.
 + fixed seeds, for the canonical/paper runs; keep MPS/CUDA for fast iteration, but require a
 before/after comparison against the CPU/deterministic result before trusting a GPU-trained number
 for anything reported. Persisting weights (§2.4) also sidesteps this for the submission artifact.
+**Done (2026-09-09):** `DLSequenceModel.__init__` takes `deterministic: bool = False`; when
+True, `_device()` returns `torch.device("cpu")` unconditionally (ignoring MPS availability) and
+`torch.use_deterministic_algorithms(True)` is set. Off by default so fast local iteration on MPS
+is unaffected; the canonical/paper run should pass `deterministic=True` explicitly. Regression
+test added (`tests/test_dl_sequence.py::test_deterministic_flag_is_reproducible`): two independent
+fits with the flag on produce predictions matching to `atol=1e-5` (not exact bit-equality, since
+CPU BLAS reduction order can still vary a few ULPs across thread counts - a much smaller effect
+than the backend divergence this fixes). Full `tests/test_dl_sequence.py` suite (6 tests) passes.
+Not yet done: actually re-running the paper-cited `gru_negbin` result with `deterministic=True`
+to confirm it reproduces the existing CPU-trained number bit-for-bit-ish before calling it the new
+canonical run - the flag exists and is tested, but the deployed ensemble's training scripts
+(`run_dl.py`, `run_ensemble.py`) don't pass it yet.
 **Effort:** half a day.
 
 ### 1.5 The paper's entire Results table is stale relative to the current data — **P0** (found 2026-09-08)
