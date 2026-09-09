@@ -94,12 +94,14 @@ def main():
     _write(state_single_forecast(c5, "chikungunya", lambda: LGBMQuantileModel(disease="chikungunya"),
                                  ufs=MANDATORY_UFS), "chikungunya", MANDATORY_UFS)
 
-    print("\ndengue cities (climatological)...")
-    _write(city_single_forecast(d5, "dengue", ClimatologicalQuantileModel, DENGUE_TARGET_CITIES),
+    print("\ndengue cities (climatological, mean point-estimate for sparse series)...")
+    _write(city_single_forecast(d5, "dengue", lambda: ClimatologicalQuantileModel(point_estimate="mean"),
+                                 DENGUE_TARGET_CITIES),
            "dengue_cities", DENGUE_TARGET_CITIES)
 
-    print("\nchikungunya cities (climatological)...")
-    _write(city_single_forecast(c5, "chikungunya", ClimatologicalQuantileModel, CHIKUNGUNYA_TARGET_CITIES),
+    print("\nchikungunya cities (climatological, mean point-estimate for sparse series)...")
+    _write(city_single_forecast(c5, "chikungunya", lambda: ClimatologicalQuantileModel(point_estimate="mean"),
+                                 CHIKUNGUNYA_TARGET_CITIES),
            "chikungunya_cities", CHIKUNGUNYA_TARGET_CITIES)
 
 
