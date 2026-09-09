@@ -106,6 +106,29 @@ Build on `paper/imdc_paper.tex`:
 - **Sequencing:** draft Intro/Data/Methods now (data-independent); fill Results/Discussion after the
   forecast phase and once the 2025–26 season resolves enough to score fold 4; fold in comparanda
   from the July/October webinars; submit after the October results.
+- **Re-verify the two LightGBM-era ablations (Table~\ref{tab:ablation}), scoped (2026-09-09).**
+  The climate-covariate and hyperparameter-tuning rows were run pre-XGBoost-swap/pre-refresh and
+  are explicitly footnoted in the paper as not re-verified on the current pipeline (honest, not
+  blocking - see the footnote at `imdc_paper.tex` Sec 2.8). Assessed what a real re-verification
+  needs, rather than attempting a rushed one that could produce a number that isn't actually
+  comparable to the original claim:
+  - **Climate-covariate ablation** is harder to reproduce than it looks: `panel.py::FEATURE_COLS`
+    now bakes `temp_med_roll4`/`precip_med_roll4`/`rel_humid_med_roll4`/`temp_anomaly` in
+    unconditionally for every model (LightGBM and XGBoost both always get them) - there is no
+    current toggle to train the "without observed climate" variant the original ablation compared
+    against. Redoing this needs a `FEATURE_COLS` variant (or a `build_panel(..., exclude_cols=...)`
+    param) plus a full 4-fold/26-state XGBoost backtest for each arm - two ~35-40 min XGBoost runs
+    (`multi_output_tree`, per IMPROVEMENTS.md Sec 6c's own cost note), not a quick check.
+  - **Hyperparameter-tuning ablation** needs an actual internal-holdout search (whatever grid/
+    random search produced the original "+5% internal holdout" figure isn't preserved anywhere in
+    this repo as re-runnable code) plus the true 4-fold backtest of the winning config, to
+    reproduce the original "reverses on the true backtest" finding rather than just assert it
+    still holds.
+  - Both are real, multi-hour-plus undertakings (data engineering + XGBoost compute), not
+    something to do carelessly just to clear a checklist item - a wrong or non-comparable number
+    here would be worse than the current, correctly-caveated "not yet re-verified." Left as scoped,
+    concrete future work; the paper's existing footnote/table caption already correctly represents
+    the current state of knowledge and needs no further edit until this is actually done.
 
 ## 6. Workstream E — Evaluation & ops
 
