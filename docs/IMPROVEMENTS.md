@@ -151,20 +151,26 @@ surfaced a genuine ensemble improvement found the same night (docs/FUTURE_WORK.m
 fold-1 tuning discipline. The corrected, current, and improved deployed ensemble is now
 **WIS=1162.2, normWIS_all=0.561, normWIS_ex2024=0.375** (new conformal factors: 1.08/1.04/1.19/1.86
 for 50/80/90/95, vs the stale 1.03/1.00/1.23/1.73).
-**STILL OUTSTANDING:** manually sync every cited number in `imdc_paper.tex`/`imdc_paper_SI.tex`
-(Results text, Table~\ref{tab:leaderboard}, Table~\ref{tab:byfold}, Fig~\ref{fig:conformal} and
-its caption, the specific conformal-factor and coverage numbers in prose, and any other table that
-sources these files - `tab:ablation`, `tab:chik`, `tab:operational`, etc.) - deliberately NOT done
-automatically overnight, since it touches the manuscript's actual reported results and deserves
-your review rather than an unattended rewrite. Two decisions bundled together for that review: (1)
-sync the paper to the corrected data with the SAME `lgbm_quantile`-based ensemble it already
-describes, or (2) also adopt the `xgb_quantile` swap in the paper. Either way, consider building a
-script that renders the LaTeX tables directly from the CSVs rather than hand-transcribing numbers,
-to make this a non-issue on the *next* data refresh too - and a lightweight check (e.g. a recorded
-raw-data file hash alongside each `*_scored.csv`) that can detect "this result predates the
-current data" automatically, rather than relying on manually noticing file timestamps as happened
-here.
-**Effort:** CSV regeneration - done. Remaining: a half day for a careful paper-number sync.
+**Paper sync: DONE (2026-09-08, same session as the CSV regeneration).** This note originally
+said the LaTeX sync was still outstanding, written mid-pass before the sync itself happened later
+the same session (the commit that added this note, `53792e8`, also carried out the full resync -
+see its message: "Resynced the entire paper... leaderboard/by-fold/significance/operational
+tables, all figures, and the prose narrative"). Leaving the stale "STILL OUTSTANDING" wording here
+risked exactly the kind of confusion this whole section exists to prevent, so corrected it
+(2026-09-09) after independently re-verifying against the current CSVs rather than just trusting
+the commit message: `imdc_paper.tex` Table~\ref{tab:leaderboard} (1162/1190/1264/1301/1557,
+coverage 46/74/87/94 for the ensemble) matches `final_leaderboard.csv`/`final_leaderboard_normalized.csv`
+exactly; Table~\ref{tab:byfold}'s ensemble row (337/3297/403/408) matches
+`final_leaderboard_by_fold.csv` exactly; Table~\ref{tab:chik} (89.5) matches
+`chik_final_leaderboard.csv`. Decision (2) from the original note was the one taken: the paper
+adopts the `xgb_quantile` swap, not the old `lgbm_quantile`-based ensemble.
+**Still genuinely outstanding:** the tooling suggestion (render LaTeX tables directly from the
+CSVs, and/or a recorded raw-data hash alongside each `*_scored.csv` to auto-detect staleness) was
+never built - the sync itself is done, but nothing yet prevents the *next* data refresh from
+silently going stale the same way this one did. Worth doing before the next refresh, not urgent
+today since no refresh is imminent.
+**Effort:** CSV regeneration - done. Paper-number sync - done. Remaining: the staleness-prevention
+tooling itself (half a day).
 
 **Follow-up verification (2026-09-08, later the same day):** re-ran every remaining model not
 covered by the first pass - `prophet_model.py` (v1), `prophet_v2.py`, `sarimax_model.py` (v1),
