@@ -174,7 +174,7 @@ class DLSequenceModel:
         std = allrows[_SEQ_NUMERIC].std().replace(0, 1.0)
         return mean, std
 
-    def fit(self, train_df, fold, covariates=None):
+    def fit(self, train_df, fold) -> "DLSequenceModel":
         self._fold = fold
         weekly, series, static = self._assemble(fold, self.disease)
         self._mean, self._std = self._standardizer(series)

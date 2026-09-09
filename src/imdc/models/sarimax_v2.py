@@ -111,7 +111,7 @@ class SarimaxV2Model:
         self.seed = seed
         self._results = {}
 
-    def fit(self, train_df, fold, covariates=None):
+    def fit(self, train_df, fold) -> "SarimaxV2Model":
         self._fold = fold
         origin_df = _origin_anchored_series(fold, self.disease)
         origin_df = origin_df[origin_df["uf"].isin(self.ufs)]

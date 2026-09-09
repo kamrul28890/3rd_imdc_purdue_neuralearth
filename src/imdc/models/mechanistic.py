@@ -111,7 +111,7 @@ class MechanisticTrajectoryModel:
         df["season_week"] = [season_week_from_date(d) for d in df["date"]]
         return df
 
-    def fit(self, train_df, fold, covariates=None):
+    def fit(self, train_df, fold) -> "MechanisticTrajectoryModel":
         self._fold = fold
         df = self._state_incidence(fold)
         target_season_year = _season_start_year(fold.target_start)

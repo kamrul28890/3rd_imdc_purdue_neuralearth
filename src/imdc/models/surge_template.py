@@ -48,8 +48,8 @@ _MIN_LOG_GAIN_STD = 0.1  # floor so a state with 2-3 near-identical historical s
 class SurgeTemplateModel(MechanisticTrajectoryModel):
     name = "surge_template"
 
-    def fit(self, train_df, fold, covariates=None):
-        super().fit(train_df, fold, covariates)
+    def fit(self, train_df, fold) -> "SurgeTemplateModel":
+        super().fit(train_df, fold)
         self._templates = {}
         self._peak_offsets = {}
         self._log_gain_mu = {}

@@ -41,7 +41,7 @@ class ProphetModel:
         self.seed = seed
         self._models = {}
 
-    def fit(self, train_df, fold, covariates=None):
+    def fit(self, train_df, fold) -> "ProphetModel":
         from prophet import Prophet
 
         cases = cutoff_filter(load_cases(self.disease), fold.train_cutoff)

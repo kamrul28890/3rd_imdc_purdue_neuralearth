@@ -93,7 +93,7 @@ class ProphetV2Model:
         self._models = {}
         self._resid_by_epiweek = {}
 
-    def fit(self, train_df, fold, covariates=None):
+    def fit(self, train_df, fold) -> "ProphetV2Model":
         from prophet import Prophet
 
         self._fold = fold

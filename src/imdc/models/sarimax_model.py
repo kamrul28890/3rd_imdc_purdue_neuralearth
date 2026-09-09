@@ -40,7 +40,7 @@ class SarimaxModel:
         self.quantile_levels = quantile_levels
         self._results = {}
 
-    def fit(self, train_df, fold, covariates=None):
+    def fit(self, train_df, fold) -> "SarimaxModel":
         cases = cutoff_filter(load_cases(self.disease), fold.train_cutoff)
         assert_no_leakage(cases, fold.train_cutoff, name=f"fold{fold.id} sarimax")
         state = aggregate_cases_to_state(cases)

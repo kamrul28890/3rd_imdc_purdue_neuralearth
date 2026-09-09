@@ -113,7 +113,7 @@ class DLSequenceWISModel:
                   for uf, g in df[df["uf"].isin(self._ufs)].groupby("uf")}
         return series, static
 
-    def fit(self, train_df, fold, covariates=None):
+    def fit(self, train_df, fold) -> "DLSequenceWISModel":
         self._fold = fold
         series, static = self._assemble(fold, self.disease)
         self._static = static

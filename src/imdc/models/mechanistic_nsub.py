@@ -93,8 +93,8 @@ class NSubEpidemicMechanisticModel(MechanisticTrajectoryModel):
 
     name = "mechanistic_nsub"
 
-    def fit(self, train_df, fold, covariates=None):
-        super().fit(train_df, fold, covariates)
+    def fit(self, train_df, fold) -> "NSubEpidemicMechanisticModel":
+        super().fit(train_df, fold)
         for uf, mats in list(self._trajectories.items()):
             smoothed = []
             for curve in mats:

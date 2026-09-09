@@ -47,8 +47,8 @@ def _season_mean_anomaly(fold) -> pd.DataFrame:
 class ClimateSurgeModel(SurgeTemplateModel):
     name = "climate_surge"
 
-    def fit(self, train_df, fold, covariates=None):
-        super().fit(train_df, fold, covariates)
+    def fit(self, train_df, fold) -> "ClimateSurgeModel":
+        super().fit(train_df, fold)
         climate = _season_mean_anomaly(fold)
         in_season = climate[(climate["season_week"] >= 1) & (climate["season_week"] <= SEASON_LEN)]
         season_anom = in_season.groupby(["uf", "season_start_year"])["temp_anomaly"].mean()

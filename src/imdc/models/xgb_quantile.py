@@ -87,7 +87,7 @@ class XGBQuantileModel:
             w = w * mult
         return w
 
-    def fit(self, train_df: pd.DataFrame, fold, covariates=None) -> "XGBQuantileModel":
+    def fit(self, train_df: pd.DataFrame, fold) -> "XGBQuantileModel":
         self._fold = fold
         panel, feature_cols = build_panel(fold, disease=self.disease)
         self._feature_cols = feature_cols

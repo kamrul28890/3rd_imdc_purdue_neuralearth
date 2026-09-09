@@ -258,12 +258,27 @@ uses threads, so parallelize at the fold/quantile level with processes carefully
 
 ## 3. Software engineering & maintainability
 
-### 3.1 No formal model interface; dead params — **P1**
+### 3.1 No formal model interface; dead params — **RESOLVED** (2026-09-09; was P1)
 **What:** the fit/predict "protocol" is duck-typed and documented only in a docstring; there
 are **3 unused `covariates=None`** params.
 **How:** define `class Forecaster(typing.Protocol)` with `fit(train_df, fold) -> Self` and
 `predict(target_grid) -> long_df`, type-annotate all models to it, delete the dead params, and
 run `mypy` in CI. Makes the contract enforceable and the codebase navigable.
+**Done (2026-09-09):** added `imdc.protocol.Forecaster`, a `@runtime_checkable` Protocol
+declaring `fit(train_df, fold) -> Forecaster` / `predict(target_grid, quantile_levels) ->
+DataFrame`. By the time of this pass the dead-param count had grown to **12**, not 3 - the
+2026-09-08 overnight model sweep (FUTURE_WORK.md Sec 6c) copy-pasted the same
+`covariates=None` into every new model file (`climate_surge`, `dl_sequence_wis`, `prophet_v2`,
+`sarimax_v2`, `surge_template`, `mechanistic_nsub`) on top of the original 6
+(`dl_sequence`, `mechanistic`, `ml_boosted`, `prophet_model`, `sarimax_model`, `xgb_quantile`).
+Verified none of the 12 ever read `covariates` (including through the 3 `super().fit(...,
+covariates)` chains in the mechanistic-family subclasses) and no caller ever passed it, then
+removed it from all 12 `fit` signatures and the 3 super-calls. Added return-type annotations
+(`-> "ClassName"`) to every `fit` that lacked one. New `tests/test_protocol.py` (32 tests: 16
+model classes x 2 checks) asserts every model structurally satisfies `Forecaster` and that
+`fit`'s signature has no `covariates` param, as a standing regression guard rather than a
+one-time cleanup. Full suite (111 tests) passes.
+**Not done:** `mypy` in CI - deferred to Sec 3.5 (no CI workflow exists yet at all).
 **Effort:** half a day.
 
 ### 3.2 Duplicated logic (state vs city, ensemble vs forecast) — **P1**

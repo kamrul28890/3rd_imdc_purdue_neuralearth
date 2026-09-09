@@ -77,7 +77,7 @@ class LGBMQuantileModel:
         self._feature_cols = None
         self._fold = None
 
-    def fit(self, train_df: pd.DataFrame, fold, covariates=None) -> "LGBMQuantileModel":
+    def fit(self, train_df: pd.DataFrame, fold) -> "LGBMQuantileModel":
         self._fold = fold
         panel, feature_cols = build_panel(fold, disease=self.disease)
         self._feature_cols = feature_cols
