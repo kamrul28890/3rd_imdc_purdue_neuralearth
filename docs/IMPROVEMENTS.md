@@ -281,7 +281,7 @@ one-time cleanup. Full suite (111 tests) passes.
 **Not done:** `mypy` in CI - deferred to Sec 3.5 (no CI workflow exists yet at all).
 **Effort:** half a day.
 
-### 3.2 Duplicated logic (state vs city, ensemble vs forecast) — **P1**
+### 3.2 Duplicated logic (state vs city, ensemble vs forecast) — **PARTLY RESOLVED** (2026-09-09; was P1)
 **What:** `harness.py` (state) and `evaluation/city.py` (city) largely duplicate run/score
 logic; `ensemble.py::vincentization` and `submission/forecast.py::_vincentize_wide` both do
 per-quantile median (the split exists only because `_KEYS` includes `observed_value`, which
@@ -289,6 +289,35 @@ drops NaN groups on the prediction-only path).
 **How:** introduce a `Geography` abstraction (state / city) so one harness handles both; unify
 the two Vincentization implementations into one that takes explicit `index_cols` and never
 assumes `observed_value`.
+**Done (2026-09-09):**
+- **Vincentization unified.** `ensemble.py` now has `_median_ensemble(stacked, index_cols,
+  passthrough_cols=None)`: groups only on caller-supplied `index_cols` (never on a column
+  that can be NaN) and attaches anything else (e.g. `observed_value`) via a first-value merge
+  after the groupby instead of putting it in the groupby key. `vincentization` (backtest,
+  has `observed_value`) and `submission/forecast.py::_vincentize_wide` (real forecast,
+  doesn't) both delegate to it. Added a regression test proving the actual bug this fixes:
+  `test_vincentization_keeps_rows_with_no_observed_value` (rows used to silently vanish when
+  grouped by a NaN `observed_value`).
+- **State/city run+score loops merged.** `harness.py` gained `_run_backtest_generic` and
+  `_score_generic`; `run_backtest`/`score_backtest` (state) and `city.run_city_backtest`/
+  `city.score_city_backtest` are now thin wrappers supplying their own
+  train/grid/observed-frame builders to the same shared loop and scoring math, instead of
+  two independently-maintained copies of the fit/predict loop and the pivot+WIS+coverage
+  logic.
+- Chose **not** to touch any of the 9 files that call these four public functions
+  (`run_dl.py`, `run_ml.py`, `run_mechanistic.py`, `run_chikungunya.py`, `run_baselines.py`,
+  `run_cities.py`, `submission/forecast.py`, plus their own two modules) - all four
+  signatures are unchanged, so this is a pure internal dedup with zero call-site risk.
+  Verified via the existing test suite (`test_harness_baselines.py`, `test_city.py`,
+  `test_ensemble.py`, `test_submission.py`) plus the new regression test; full suite (113
+  tests) passes.
+**Not done:** the full `Geography` protocol/abstraction that would let `run_backtest` and
+`run_city_backtest` collapse into one public function (not just share an internal
+implementation) - deliberately deferred. That's a genuinely larger, higher-risk change (a
+public-API rewrite touching all 9 caller files) that this pass intentionally avoided doing
+the day of the forecast-phase deadline, when this exact code had just produced the live,
+already-uploaded submission. Worth doing later, without deadline pressure, with each of the 9
+callers re-verified individually.
 **Effort:** 1 day.
 
 ### 3.3 Seven near-duplicate `run_*.py` scripts — **P2**

@@ -64,6 +64,24 @@ def test_weighted_ensemble_respects_weights(preds):
     assert ens.loc["SP", "pred"] < 110  # pulled toward 100
 
 
+def test_vincentization_keeps_rows_with_no_observed_value():
+    """Regression guard: the old implementation grouped by `observed_value` itself, which
+    pandas groupby silently drops when NaN - exactly the prediction-only/forecast case (no
+    ground truth exists yet). This is why submission/forecast.py used to need its own
+    near-duplicate `_vincentize_wide` instead of reusing `vincentization`.
+    """
+    rows = []
+    for uf in ["SP", "RJ"]:
+        for model, base in [("m_a", 100), ("m_b", 120), ("m_c", 140)]:
+            row = _mk(model, uf, fold=5, base=base, observed=np.nan)
+            row["horizon_weeks"] = 16
+            rows.append(row)
+    preds = pd.DataFrame(rows)
+    ens = vincentization(preds, ["m_a", "m_b", "m_c"])
+    assert set(ens["uf"]) == {"SP", "RJ"}
+    assert ens.set_index("uf").loc["SP", "pred"] == pytest.approx(120)
+
+
 def test_inverse_wis_weights_favor_lower_wis():
     scored = pd.DataFrame([
         {"model": "good", "fold_id": 1, "wis": 1.0},

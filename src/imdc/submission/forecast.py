@@ -13,6 +13,7 @@ from imdc.config import MANDATORY_UFS, QUANTILE_COLUMNS
 from imdc.evaluation.city import _city_cases
 from imdc.evaluation.harness import build_state_training_frame
 from imdc.evaluation.postprocess import enforce_monotonicity, to_submission_wide
+from imdc.models.ensemble import _median_ensemble
 from imdc.submission.build import season_date_range
 
 FOLD_SEASON = {1: 2023, 2: 2024, 3: 2025, 4: 2026, 5: 2027}
@@ -26,9 +27,12 @@ def _full_season_grid(fold, season_year: int, geographies: list) -> pd.DataFrame
 
 
 def _vincentize_wide(member_wides: list) -> pd.DataFrame:
+    """Same per-quantile-median ensembling as `models.ensemble.vincentization`, for a genuine
+    forecast (no `observed_value`/`fold_id` to key on) instead of a scored backtest table -
+    see `_median_ensemble` for why these used to be two separate implementations.
+    """
     stacked = pd.concat([w[["uf", "date"] + QUANTILE_COLUMNS] for w in member_wides], ignore_index=True)
-    ens = stacked.groupby(["uf", "date"], as_index=False)[QUANTILE_COLUMNS].median()
-    return enforce_monotonicity(ens)
+    return _median_ensemble(stacked, index_cols=["uf", "date"])
 
 
 def state_ensemble_forecast(fold, disease: str, member_factories: list, ufs=MANDATORY_UFS) -> pd.DataFrame:

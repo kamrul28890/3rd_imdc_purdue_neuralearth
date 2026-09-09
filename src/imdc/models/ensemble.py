@@ -14,17 +14,40 @@ from imdc.config import QUANTILE_COLUMNS
 from imdc.evaluation.postprocess import enforce_monotonicity
 
 _KEYS = ["uf", "date", "fold_id", "horizon_weeks", "observed_value"]
+_INDEX_COLS = ["uf", "date", "fold_id", "horizon_weeks"]
+
+
+def _median_ensemble(stacked: pd.DataFrame, index_cols: list, passthrough_cols: list = None) -> pd.DataFrame:
+    """Per-quantile median across rows sharing `index_cols` (Gneiting-style Vincentization).
+
+    `index_cols` must be non-null for every row being ensembled - deliberately NOT the old
+    `_KEYS` (which put `observed_value` in the groupby key itself): grouping on a column that
+    can be NaN silently *drops* those groups, which is exactly what happened on the
+    prediction-only/forecast path (no observed value exists yet there), forcing a separate
+    near-duplicate implementation (submission/forecast.py's old `_vincentize_wide`). Any such
+    column belongs in `passthrough_cols` instead and is attached via a first-value merge after
+    the groupby - safe because it's constant within a group by construction (the actual
+    outcome at a given uf/date/fold/horizon doesn't depend on which model predicted it).
+
+    The median of monotone-ordered quantile vectors is itself monotone, so no crossing is
+    introduced; enforce_monotonicity is applied as a safeguard regardless.
+    """
+    combined = stacked.groupby(index_cols)[QUANTILE_COLUMNS].median().reset_index()
+    if passthrough_cols:
+        extra = stacked.groupby(index_cols)[passthrough_cols].first().reset_index()
+        combined = combined.merge(extra, on=index_cols, how="left")
+    return enforce_monotonicity(combined)
 
 
 def vincentization(preds_wide: pd.DataFrame, models: list) -> pd.DataFrame:
-    """Per-quantile median across models (Gneiting-style Vincentization).
-
-    The median of monotone-ordered quantile vectors is itself monotone, so no
-    crossing is introduced; enforce_monotonicity is applied as a safeguard.
+    """Per-quantile median across models (Gneiting-style Vincentization) for scored backtest
+    tables (has `observed_value`) or plain forecast tables (doesn't) alike - see
+    `_median_ensemble` for why this doesn't just group by `_KEYS`.
     """
     sub = preds_wide[preds_wide["model"].isin(models)]
-    combined = sub.groupby(_KEYS)[QUANTILE_COLUMNS].median().reset_index()
-    combined = enforce_monotonicity(combined)
+    index_cols = [c for c in _INDEX_COLS if c in sub.columns]
+    passthrough = ["observed_value"] if "observed_value" in sub.columns else []
+    combined = _median_ensemble(sub, index_cols, passthrough)
     combined["model"] = "ensemble_vincent"
     return combined
 

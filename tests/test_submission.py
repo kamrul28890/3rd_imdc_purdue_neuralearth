@@ -5,7 +5,24 @@ import pytest
 
 from imdc.config import QUANTILE_COLUMNS
 from imdc.submission.build import build_submission_frame, season_date_range
+from imdc.submission.forecast import _vincentize_wide
 from imdc.submission.validate import SubmissionError, is_valid, validate_submission
+
+
+def test_vincentize_wide_takes_per_quantile_median_of_member_forecasts():
+    """`_vincentize_wide` (used by the real forecast-phase submission, no observed_value/
+    fold_id available) must agree with `models.ensemble.vincentization`'s median logic -
+    they share `_median_ensemble` (IMPROVEMENTS.md Sec 3.2 dedup) and should never diverge.
+    """
+    dates = season_date_range(2027)[:2]
+    members = []
+    for base in (100, 120, 140):
+        w = pd.DataFrame({"uf": ["SP"] * 2, "date": dates})
+        for col, off in zip(QUANTILE_COLUMNS, [-9, -6, -4, -2, 0, 2, 4, 6, 9]):
+            w[col] = base + off
+        members.append(w)
+    ens = _vincentize_wide(members)
+    assert ens.set_index("uf")["pred"].iloc[0] == pytest.approx(120)
 
 
 def test_season_date_range_matches_platform_epiweeks():
