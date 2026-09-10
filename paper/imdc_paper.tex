@@ -476,9 +476,17 @@ described in the main text below. We report both results rather than silently re
 original figures, since the discrepancy is itself informative: whether an internal-holdout
 hyperparameter search transfers to the true backtest evidently depends on the specific model
 family and hyperparameter space searched, not a fixed property of this forecasting task. This
-XGBoost re-verification has not been adopted into the deployed ensemble pending further validation
-(checking the swap at the ensemble level under this project's own fold-1 tuning discipline, the
-same check used to validate the original LightGBM-to-XGBoost swap).}). A feature-importance
+XGBoost re-verification was checked at the ensemble level under this project's own fold-1 tuning
+discipline (the same check used to validate the original LightGBM-to-XGBoost swap) and did
+\emph{not} pass: combined with climatological\_quantile and gru\_negbin and conformal-recalibrated,
+both the shallower-hyperparameter config alone and combined with dropping the climate covariates
+lose on fold 1 (WIS 347 and 346 respectively, vs.\ the deployed ensemble's 337) despite winning on
+every full-aggregate metric -- the same overfitting-to-the-reporting-folds pattern this project has
+already caught in other candidate changes (Section~\ref{sec:negative}). Dropping the climate
+covariates alone does pass fold 1 at the ensemble level (335 vs.\ 337) but is a mixed result
+elsewhere (worse raw WIS and normalized WIS all-folds, better normalized WIS excluding 2024) rather
+than a clean sweep. None of the three candidates were adopted; the deployed ensemble is unchanged.}).
+A feature-importance
 analysis showed why: the nine
 added covariates (minimum temperature, a derived standardized-precipitation drought index at one,
 three, and six month accumulations, multi-month temperature lags, thermal range, and rainy days)
@@ -497,19 +505,25 @@ backtest,
 by 5 percent worsened the true backtest on the LightGBM configuration this was originally tested
 on, because an internal holdout does not necessarily represent forecasting a full future season
 from mid-year; conservative, a priori defaults generalized better in that specific test. A
-re-verification on the current XGBoost-based pipeline found the opposite (see footnote above): the
-holdout's preferred configuration also won the true backtest there. Together these results locate
-much of the predictable signal in this problem, caution against complexity that is not validated on
-the true forecasting task, and show that even a validation discipline's own conclusions can be
-implementation-specific rather than a fixed property of the problem.
+re-verification on the current XGBoost-based pipeline found the opposite as a standalone model (see
+footnote above): the holdout's preferred configuration also won the true backtest there. Checked
+further at the ensemble level, though, it lost on the same fold-1 tuning check that validated every
+other change reported here, so it was not adopted -- a reminder that a standalone-model result and
+an ensemble-level result can disagree even when both are individually rigorous. Together these
+results locate much of the predictable signal in this problem, caution against complexity that is
+not validated on the true forecasting task, and show that even a validation discipline's own
+conclusions can be implementation-specific rather than a fixed property of the problem.
 
 \begin{table}[t]
 \centering\small
-\caption{\textbf{Interventions that did not help, plus one that did on re-verification (negative
-results and one contradiction).} Each was evaluated on the same backtest as the main comparison.
-$^{\dagger}$Originally tested on the LightGBM configuration before it was superseded by XGBoost and
-before a later data refresh; re-verified on the current XGBoost-based pipeline and current data
-(see footnote in text). The hyperparameter-tuning re-verification reversed the original finding.}
+\caption{\textbf{Interventions that did not help, plus one that reversed on re-verification but
+still did not survive ensemble-level scrutiny (negative results throughout).} Each was evaluated on
+the same backtest as the main comparison. $^{\dagger}$Originally tested on the LightGBM
+configuration before it was superseded by XGBoost and before a later data refresh; re-verified on
+the current XGBoost-based pipeline and current data (see footnote in text). The hyperparameter
+row's standalone-model finding reversed on re-verification, but checking it at the ensemble level
+(the same fold-1 discipline that validated every adopted change) found it should not be adopted
+either -- none of these four rows changed the deployed model.}
 \label{tab:ablation}
 \begin{tabular}{@{}lll@{}}
 \toprule
@@ -521,8 +535,8 @@ Hierarchical macroregion pooling & WIS 1162 $\rightarrow$ 1185 & small-state bia
  (added to ensemble) & & with climatological member \\
 Hyperparameter tuning$^{\dagger}$ & internal holdout $+5\%$, & internal holdout misrepresented \\
  (LightGBM, original) & backtest worse & full-season forecasting \\
-Hyperparameter tuning$^{\dagger}$ & internal holdout $-2.5\%$, & generalized this time; not \\
- (XGBoost) & backtest \emph{also} better ($-3.2\%$) & yet adopted (see text) \\
+Hyperparameter tuning$^{\dagger}$ & standalone $-3.2\%$; & generalized alone, but not \\
+ (XGBoost) & ensemble fold 1 worse & at ensemble level (see text) \\
 \bottomrule
 \end{tabular}
 \end{table}

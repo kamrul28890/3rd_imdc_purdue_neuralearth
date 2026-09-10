@@ -137,14 +137,31 @@ Build on `paper/imdc_paper.tex`:
     vs. re-verification) since the finding's direction differs. Recompiled and visually checked
     (`pdflatex` twice, zero errors; the table's overfull-hbox warning shrank from the original's
     pre-existing 14.4pt to 3.7pt, still cosmetic and imperceptible in the rendered page).
-  - **Not done / explicit follow-up:** the winning hyperparameter config (max_depth=3,
-    min_child_weight=50) has genuinely beaten the deployed default on every fold of the true
-    backtest - a real adoption candidate, not just a reportable footnote. It has **not** been
-    checked at the ensemble level (combined with climatological + gru_negbin, conformal-calibrated)
-    under this project's own fold-1 tuning discipline, the same check that validated the original
-    LightGBM-to-XGBoost swap, and has **not** been adopted into the deployed ensemble or the live
-    forecast-phase submission. That's a deliberate, separate decision left to the user given it
-    would mean touching the already-submitted, already-verified live competition entry again.
+  - **Follow-up (2026-09-09, same day): checked at the ensemble level — NOT adopted.** The user
+    asked to adopt whichever setting genuinely gives the best result, so all three candidates
+    (no-climate-covariates alone, shallower-hyperparameters alone, and the two combined) were
+    checked at the ensemble level (climatological_quantile + candidate xgb_quantile + gru_negbin,
+    Vincentized, conformal-recalibrated on fold 1 — `scripts/ensemble_check_variant.py`, which also
+    ran the combined variant standalone first via `scripts/ablation_combined_best.py`: WIS=1171.5,
+    *worse* than either individual change alone, i.e. the two changes do not stack). Ensemble-level
+    results (deployed default: fold1=337.27, all=1162.20, normWIS_all=0.5610, normWIS_ex2024=0.3746):
+    | candidate | fold1 | all | normWIS_all | normWIS_ex2024 |
+    |---|---|---|---|---|
+    | no_climate | **335.23** (wins) | 1165.07 (loses) | 0.5624 (loses) | 0.3706 (wins) |
+    | shallower_hparams | 347.42 (**loses**) | 1143.21 (wins) | 0.5519 (wins) | 0.3654 (wins) |
+    | combined | 346.46 (**loses**) | 1147.60 (wins) | 0.5540 (wins) | 0.3697 (wins) |
+
+    Both hyperparameter-based candidates **fail the fold-1 discipline at the ensemble level**
+    despite winning every full-aggregate metric — the exact overfitting-to-the-reporting-folds
+    pattern this project's own discipline exists to catch, now caught in a candidate this project
+    generated itself, not just in ones reviewed from competitors. `no_climate` passes fold-1 but is
+    a mixed result elsewhere (small losses on raw WIS/normWIS_all, a win on normWIS_ex2024) — not
+    the clean, every-metric sweep the original LightGBM-to-XGBoost swap was. **Decision: none of
+    the three adopted.** The deployed ensemble, `run_ensemble.py`'s `MEMBERS`,
+    `generate_forecast_2026_27.py`, and the already-submitted live forecast are all unchanged - this
+    was a rigorous negative result (consistent with this project's own "added complexity did not
+    pay" theme), not a missed opportunity. Paper footnote, main text, and Table~\ref{tab:ablation}
+    updated to record this closure (recompiled, zero errors, table overfull-hbox down to 1.8pt).
 
 ## 6. Workstream E — Evaluation & ops
 
