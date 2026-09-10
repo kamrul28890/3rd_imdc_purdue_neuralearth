@@ -462,14 +462,24 @@ non-linear (DLNM) structure of the strongest model in the 2024 sprint, which let
 effect on cases be both delayed (this week's temperature can affect cases several weeks later, not
 just this week) and non-linear \citep{araujo2026,gasparrini2010},
 worsened backtest WIS by 3.3 percent (1299 to 1342 on the LightGBM configuration on which this test
-was run\footnote{This test and the hyperparameter-tuning test below were performed on the
-LightGBM-based pipeline before it was superseded by XGBoost (Section~\ref{sec:methods}) and before
-a later data refresh; both figures are the original findings and have not been re-verified on the
-current XGBoost-based pipeline or the current data. We report them because the underlying
-methodological lessons -- observed local weather is not the load-bearing climate signal, and
-internal-holdout hyperparameter gains do not transfer to the true backtest -- do not depend on
-which gradient-boosted implementation they were discovered with, and re-deriving both from scratch
-was out of scope for this revision.}). A feature-importance analysis showed why: the nine
+was originally run\footnote{This test and the hyperparameter-tuning test below were originally
+performed on the LightGBM-based pipeline before it was superseded by XGBoost
+(Section~\ref{sec:methods}) and before a later data refresh. Re-verified on the current
+XGBoost-based pipeline and current data (2026-09-09): the climate-covariate finding replicates in
+the same direction (WIS 1166 $\rightarrow$ 1190 without vs.\ with the covariates, a 2.0 percent
+degradation from adding them, versus the original 3.3 percent). The hyperparameter-tuning finding
+does \emph{not} replicate: on XGBoost, the config an internal fold-1 holdout preferred (shallower
+trees, \texttt{max\_depth} 3 vs.\ the deployed default 5, with stronger leaf-size regularization)
+also won the true 4-fold backtest on every single fold (WIS 1190 $\rightarrow$ 1152, a genuine 3.2
+percent improvement, not an overfit to the holdout) -- the opposite of the LightGBM-era finding
+described in the main text below. We report both results rather than silently replacing the
+original figures, since the discrepancy is itself informative: whether an internal-holdout
+hyperparameter search transfers to the true backtest evidently depends on the specific model
+family and hyperparameter space searched, not a fixed property of this forecasting task. This
+XGBoost re-verification has not been adopted into the deployed ensemble pending further validation
+(checking the swap at the ensemble level under this project's own fold-1 tuning discipline, the
+same check used to validate the original LightGBM-to-XGBoost swap).}). A feature-importance
+analysis showed why: the nine
 added covariates (minimum temperature, a derived standardized-precipitation drought index at one,
 three, and six month accumulations, multi-month temperature lags, thermal range, and rainy days)
 together carried only 5.3 percent of importance and ranked below the existing features. The climate
@@ -484,29 +494,35 @@ macroregion: shrinking a small state toward a region dominated by a larger, diff
 state introduces bias. Third, a hyperparameter search that improved an internal time-block holdout,
 a held-out slice of recent training weeks used to tune hyperparameters before touching the real
 backtest,
-by 5 percent worsened the true backtest, because an internal holdout does not represent forecasting
-a full future season from mid-year. Conservative, a priori defaults generalized better. Together
-these results locate the predictable signal in this problem and caution against complexity that is
-not validated on the true forecasting task.
+by 5 percent worsened the true backtest on the LightGBM configuration this was originally tested
+on, because an internal holdout does not necessarily represent forecasting a full future season
+from mid-year; conservative, a priori defaults generalized better in that specific test. A
+re-verification on the current XGBoost-based pipeline found the opposite (see footnote above): the
+holdout's preferred configuration also won the true backtest there. Together these results locate
+much of the predictable signal in this problem, caution against complexity that is not validated on
+the true forecasting task, and show that even a validation discipline's own conclusions can be
+implementation-specific rather than a fixed property of the problem.
 
 \begin{table}[t]
 \centering\small
-\caption{\textbf{Interventions that did not help (negative results).} Each was evaluated on the same
-backtest as the main comparison. $^{\dagger}$The climate-covariate and hyperparameter-tuning tests
-were run on the LightGBM configuration before it was superseded by XGBoost and before a later data
-refresh (see footnote in text); their methodological lessons still apply but the exact figures are
-not re-verified on the current pipeline.}
+\caption{\textbf{Interventions that did not help, plus one that did on re-verification (negative
+results and one contradiction).} Each was evaluated on the same backtest as the main comparison.
+$^{\dagger}$Originally tested on the LightGBM configuration before it was superseded by XGBoost and
+before a later data refresh; re-verified on the current XGBoost-based pipeline and current data
+(see footnote in text). The hyperparameter-tuning re-verification reversed the original finding.}
 \label{tab:ablation}
 \begin{tabular}{@{}lll@{}}
 \toprule
 \textbf{Intervention} & \textbf{Effect} & \textbf{Reason} \\
 \midrule
-Observed-climate covariates$^{\dagger}$ (LightGBM) & WIS 1299 $\rightarrow$ 1342 & 5.3\% importance; signal is climate \\
- & & forecast + ENSO, not observed weather \\
+Observed-climate covariates$^{\dagger}$ & WIS 1166 $\rightarrow$ 1190 (current); & 5.3\% importance; signal is \\
+ (XGBoost) & 1299 $\rightarrow$ 1342 (orig.) & forecast + ENSO, not observed weather \\
 Hierarchical macroregion pooling & WIS 1162 $\rightarrow$ 1185 & small-state bias; too correlated \\
  (added to ensemble) & & with climatological member \\
-Hyperparameter tuning$^{\dagger}$ & internal holdout $+5\%$, & internal holdout misrepresents \\
- & backtest worse & full-season forecasting \\
+Hyperparameter tuning$^{\dagger}$ & internal holdout $+5\%$, & internal holdout misrepresented \\
+ (LightGBM, original) & backtest worse & full-season forecasting \\
+Hyperparameter tuning$^{\dagger}$ & internal holdout $-2.5\%$, & generalized this time; not \\
+ (XGBoost) & backtest \emph{also} better ($-3.2\%$) & yet adopted (see text) \\
 \bottomrule
 \end{tabular}
 \end{table}

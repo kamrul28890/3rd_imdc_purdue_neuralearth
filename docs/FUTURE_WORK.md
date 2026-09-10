@@ -106,29 +106,45 @@ Build on `paper/imdc_paper.tex`:
 - **Sequencing:** draft Intro/Data/Methods now (data-independent); fill Results/Discussion after the
   forecast phase and once the 2025–26 season resolves enough to score fold 4; fold in comparanda
   from the July/October webinars; submit after the October results.
-- **Re-verify the two LightGBM-era ablations (Table~\ref{tab:ablation}), scoped (2026-09-09).**
-  The climate-covariate and hyperparameter-tuning rows were run pre-XGBoost-swap/pre-refresh and
-  are explicitly footnoted in the paper as not re-verified on the current pipeline (honest, not
-  blocking - see the footnote at `imdc_paper.tex` Sec 2.8). Assessed what a real re-verification
-  needs, rather than attempting a rushed one that could produce a number that isn't actually
-  comparable to the original claim:
-  - **Climate-covariate ablation** is harder to reproduce than it looks: `panel.py::FEATURE_COLS`
-    now bakes `temp_med_roll4`/`precip_med_roll4`/`rel_humid_med_roll4`/`temp_anomaly` in
-    unconditionally for every model (LightGBM and XGBoost both always get them) - there is no
-    current toggle to train the "without observed climate" variant the original ablation compared
-    against. Redoing this needs a `FEATURE_COLS` variant (or a `build_panel(..., exclude_cols=...)`
-    param) plus a full 4-fold/26-state XGBoost backtest for each arm - two ~35-40 min XGBoost runs
-    (`multi_output_tree`, per IMPROVEMENTS.md Sec 6c's own cost note), not a quick check.
-  - **Hyperparameter-tuning ablation** needs an actual internal-holdout search (whatever grid/
-    random search produced the original "+5% internal holdout" figure isn't preserved anywhere in
-    this repo as re-runnable code) plus the true 4-fold backtest of the winning config, to
-    reproduce the original "reverses on the true backtest" finding rather than just assert it
-    still holds.
-  - Both are real, multi-hour-plus undertakings (data engineering + XGBoost compute), not
-    something to do carelessly just to clear a checklist item - a wrong or non-comparable number
-    here would be worse than the current, correctly-caveated "not yet re-verified." Left as scoped,
-    concrete future work; the paper's existing footnote/table caption already correctly represents
-    the current state of knowledge and needs no further edit until this is actually done.
+- **Re-verify the two LightGBM-era ablations (Table~\ref{tab:ablation}) — DONE (2026-09-09).**
+  Scoped on 2026-09-09 (see git history for the original scoping note), then actually executed
+  the same day once time allowed. Both required the multi-hour XGBoost compute originally
+  estimated - not a shortcut.
+  - **Climate-covariate ablation: replicates.** Added `exclude_cols` to
+    `build_panel`/`build_prediction_features` (`imdc.features.panel.OBSERVED_CLIMATE_COLS`) and
+    threaded it through `XGBQuantileModel`, since `FEATURE_COLS` bakes the observed-climate
+    covariates in unconditionally and there was no existing toggle. Full 4-fold/26-state XGBoost
+    backtest without them: WIS=1166.3, normWIS_all=0.563, normWIS_ex2024=0.404 (`scripts/
+    ablation_climate_covariates.py`, `results/metrics/ablation_xgb_no_climate_scored.csv`) -
+    worse (WIS 1190.1) with the covariates than without, a 2.0% degradation, same direction as
+    the original LightGBM finding (3.3% degradation). The methodological lesson holds across
+    model families.
+  - **Hyperparameter-tuning ablation: does NOT replicate — reverses.** Internal fold-1 holdout
+    (last 52 weeks, per this doc's own contiguous-time-block-holdout rule): a grid over XGBoost's
+    `max_depth`/`min_child_weight` found a *shallower* config (max_depth=3, min_child_weight=50)
+    beats the deployed default (max_depth=5, min_child_weight=30) on holdout pinball loss by 2.5%
+    (`scripts/ablation_hparam_search.py`). Unlike the original LightGBM story (a deeper config won
+    holdout, then lost on the true backtest), this shallower config's holdout win **generalized**:
+    it also wins the full 4-fold/26-state true backtest, on every single fold, not just in
+    aggregate (WIS 1190.1 -> 1152.4, a genuine 3.2% improvement; `scripts/
+    ablation_hparam_true_backtest.py`, `results/metrics/ablation_xgb_holdout_tuned_scored.csv`).
+    Reported both the original (LightGBM, doesn't generalize) and this (XGBoost, does generalize)
+    finding in the paper rather than picking one - the contradiction is itself the honest, current
+    state of knowledge, not a reason to suppress either result.
+  - **Paper updated** (`imdc_paper.tex`, Sec 2.8 footnote + main text + Table~\ref{tab:ablation}):
+    both figures now report current-pipeline re-verification results alongside the original
+    LightGBM findings, with the hyperparameter-tuning row explicitly split into two rows (original
+    vs. re-verification) since the finding's direction differs. Recompiled and visually checked
+    (`pdflatex` twice, zero errors; the table's overfull-hbox warning shrank from the original's
+    pre-existing 14.4pt to 3.7pt, still cosmetic and imperceptible in the rendered page).
+  - **Not done / explicit follow-up:** the winning hyperparameter config (max_depth=3,
+    min_child_weight=50) has genuinely beaten the deployed default on every fold of the true
+    backtest - a real adoption candidate, not just a reportable footnote. It has **not** been
+    checked at the ensemble level (combined with climatological + gru_negbin, conformal-calibrated)
+    under this project's own fold-1 tuning discipline, the same check that validated the original
+    LightGBM-to-XGBoost swap, and has **not** been adopted into the deployed ensemble or the live
+    forecast-phase submission. That's a deliberate, separate decision left to the user given it
+    would mean touching the already-submitted, already-verified live competition entry again.
 
 ## 6. Workstream E — Evaluation & ops
 
