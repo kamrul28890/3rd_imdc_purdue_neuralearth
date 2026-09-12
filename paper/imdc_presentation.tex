@@ -68,15 +68,17 @@ conformally-recalibrated ensemble.
 \begin{itemize}
   \item \textbf{Baselines} --- naive, seasonal-naive, climatological quantile (empirical
         same-epiweek quantiles).
-  \item \textbf{LightGBM} --- quantile regression on a synthetic-origin panel (weekly origins
-        $\times$ horizons 1--67), direct multi-horizon, with conformalized quantile regression
-        (CQR) calibration.
+  \item \textbf{Gradient boosting} --- XGBoost, a single booster with a native multi-quantile
+        objective over all nine levels, on a synthetic-origin panel (weekly origins $\times$
+        horizons 1--67), with conformalized quantile regression (CQR) calibration. We also tested
+        LightGBM; XGBoost scored significantly better overall and was adopted for dengue.
+        Chikungunya keeps LightGBM, which is the single best model on that target.
   \item \textbf{GRU} --- global recurrent network, per-state embeddings, negative-binomial head,
         5-member deep ensemble.
   \item \textbf{Mechanistic} --- Richards-curve bootstrap of historical trajectories with a
         negative-binomial observation model; intervals widen with historical variability by
         construction.
-  \item \textbf{Ensemble} --- per-quantile median (Vincentization) of climatological + LightGBM +
+  \item \textbf{Ensemble} --- per-quantile median (Vincentization) of climatological + XGBoost +
         GRU, then conformal recalibration of the tails.
 \end{itemize}
 \end{frame}
@@ -86,8 +88,10 @@ conformally-recalibrated ensemble.
 \centering
 \includegraphics[width=0.72\textwidth]{../results/figures/paper_wis_by_fold.png}
 \vfill
-\small The GRU is best in ordinary seasons, worst on the 2024 outlier. LightGBM shows the
-opposite profile. The ensemble never suffers a member's worst-season failure.
+\small The GRU is best in ordinary seasons but worst on the 2024 outlier. XGBoost is strongest on
+the outlier and, unlike the LightGBM alternative we also tested (which collapsed on the ordinary
+seasons), stays reasonably competitive there too. The ensemble never suffers a member's
+worst-season failure.
 \end{frame}
 
 % ---------------------------------------------------------------
@@ -105,8 +109,8 @@ occupy a position no single member reaches.
 \centering
 \includegraphics[width=0.92\textwidth]{../results/figures/paper_conformal.png}
 \vfill
-\small Factors \{50: 1.03, 80: 1.00, 90: 1.23, 95: 1.73\} tuned on one season, applied to all
-others. Mean WIS 1281 $\to$ 1216 (out-of-sample $-5.5\%$); coverage 46/76/84/88 $\to$ 47/76/88/93.
+\small Factors \{50: 1.08, 80: 1.04, 90: 1.19, 95: 1.86\} tuned on one season, applied to all
+others. Mean WIS 1234 $\to$ 1162 (out-of-sample $-6.2\%$); coverage 43/72/82/86 $\to$ 46/74/87/94.
 Gain concentrates in the outbreak season at negligible cost elsewhere.
 \end{frame}
 
@@ -122,14 +126,19 @@ subsets of a highly skewed set of states. We report both; a single aggregate can
 % ---------------------------------------------------------------
 \begin{frame}{Finding 4: added complexity did not pay}
 \begin{itemize}
-  \item \textbf{Observed climate covariates} added to LightGBM: WIS \textbf{worsened} (1299
-        $\to$ 1342). The forecast-relevant signal is the ECMWF seasonal forecast and ENSO, not
-        observed weather --- observed climate is already implicit in recent case lags.
-  \item \textbf{Hierarchical macroregion pooling} of seasonal climatology: WIS worsened (1216
-        $\to$ 1241). States are too heterogeneous within a macroregion for naive pooling to help.
-  \item An internal-holdout hyperparameter search that \emph{improved} the holdout
-        \emph{worsened} the true backtest --- a caution about tuning discipline in
-        heavily-autocorrelated synthetic-origin panels.
+  \item \textbf{Observed climate covariates} added to the gradient-boosted model: WIS
+        \textbf{worsened} (1166 $\to$ 1190, $-2.0\%$; replicates the original LightGBM-era result
+        of 1299 $\to$ 1342, $-3.3\%$). The forecast-relevant signal is the ECMWF seasonal forecast
+        and ENSO, not observed weather --- observed climate is already implicit in recent case
+        lags.
+  \item \textbf{Hierarchical macroregion pooling} of seasonal climatology: WIS worsened (1162
+        $\to$ 1185). States are too heterogeneous within a macroregion for naive pooling to help.
+  \item \textbf{Hyperparameter tuning, re-examined:} the original LightGBM-era result was a
+        caution (holdout improved, true backtest worsened). Re-verified on XGBoost, it
+        \emph{reverses} standalone --- the holdout's shallower config wins the true backtest too
+        ($-3.2\%$) --- but \emph{still fails} the same ensemble-level fold-1 discipline that
+        validated every adopted change. Not adopted either way: a caution that even a validation
+        rule's own conclusions can be implementation-specific.
   \item Simple methods (climatological quantile, a historical-trajectory bootstrap) are hard to
         beat, consistent with small-sample, few-series forecasting-competition evidence.
 \end{itemize}
@@ -142,7 +151,7 @@ subsets of a highly skewed set of states. We report both; a single aggregate can
 \vfill
 \small Per-state skill relative to the seasonal-naive baseline. The GRU's advantage
 concentrates in specific states rather than being uniform. Chikungunya: gradient boosting alone
-beats the ensemble (WIS 82.3 vs.\ 91.6) --- the best model is disease-specific.
+beats the ensemble (WIS 79.1 vs.\ 89.5), in every season --- the best model is disease-specific.
 \end{frame}
 
 % ---------------------------------------------------------------
@@ -155,8 +164,10 @@ beats the ensemble (WIS 82.3 vs.\ 91.6) --- the best model is disease-specific.
     \item one of \textbf{3 models with outstanding performance} on the optional city-level
           target.
   \end{itemize}
-  \item \textbf{Forecast phase (2026--27 season) submitted} 6 September 2026, ahead of the
-        10 September deadline, using the same harness and the conformal-recalibrated ensemble.
+  \item \textbf{Forecast phase (2026--27 season) submitted}, ahead of the 10 September deadline:
+        generated 7 September on data refreshed through EW25 2026, then regenerated 9 September
+        to use the now-adopted XGBoost ensemble member and a zero-median edge-case fix (from
+        earlier validation-round organizer feedback) not yet wired into the forecast script.
   \item Public repository: leakage tests, scoring-correctness tests, determinism guards,
         provenance manifest, and validated submissions for all four official tracks.
 \end{itemize}
