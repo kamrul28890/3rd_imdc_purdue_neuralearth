@@ -15,6 +15,14 @@ construction rather than by revision.
 - Declarative, quantitative sentences. Every claim carries a number or a figure/table reference.
 - Active voice where natural. Past tense for what we did, present tense for what is true.
 - Hedge only where the data hedges. State verified results plainly.
+- **Dense and compact, not verbose, but never lossy** (user directive, 2026-09-12): the target
+  venue is not yet decided, so do not cut content or findings to satisfy any one journal's word
+  limit. Tighten prose instead: shorter sentences, no throat-clearing or filler, one idea per
+  sentence, cut redundancy, keep every distinct finding, number, and nuance. A numeric word/figure
+  limit only becomes a real constraint once a venue is actually chosen, at the final formatting
+  stage, not during drafting or auditing. When reviewing a section against a specific journal's
+  limit before that point, reframe an "over the limit" finding as a compaction opportunity, not a
+  content-cutting mandate.
 
 ## 1. Contribution statement (what makes this top-journal material)
 

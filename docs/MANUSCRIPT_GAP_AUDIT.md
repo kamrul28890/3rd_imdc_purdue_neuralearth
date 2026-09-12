@@ -11,35 +11,36 @@ are triaged MAJOR (blocks a credible submission) / MINOR (polish, not blocking).
 research portion (Sec. 3) again close to actual submission — this is a snapshot, not a fact valid
 forever, the same caveat this project already applies to its own ablation findings.
 
-## 1. Target venue — reconfirmed, not re-decided
+## 1. Target venue — a working structural reference, not a locked decision
 
-`PAPER_PLAN.md` §2 already chose **PLOS Computational Biology** over PNAS, Epidemics, Lancet
-Digital Health, and PLOS NTD, with the reasoning still sound: rigorous computational-methods
-comparison, reproducibility-first, EPIFORGE-friendly, unlimited SI. Verified live (2026-09-12)
-against `journals.plos.org/ploscompbiol`:
-- Research articles are IMRaD (Introduction, Methods, Results, Discussion) with Vancouver
-  (numbered) references — **already matches** (`\usepackage[numbers,sort&compress]{natbib}`).
-- Initial submission is **format-free** (single PDF, formatting only enforced after provisional
-  accept) — so the mechanical gaps below (word counts) are not a submission blocker on day one,
-  but fixing them now is still the right call: they are real quality issues independent of when
-  the journal enforces them, and PLOS's own guidance flags "abstracts over 300 words" as the
-  single most common first-submission defect, i.e. a bad first impression on an editor even
-  during format-free review.
-- Requires a **Data Availability Statement** meeting PLOS's specific policy language — present in
-  our draft (`\section*{Data and code availability}`) but not yet checked against PLOS's exact
-  required phrasing; do this at the formatting pass (Workflow step 6), not now.
+**Correction (2026-09-12, user directive):** the submission venue is not yet decided. Treat PLOS
+Computational Biology (`PAPER_PLAN.md` §2's recommendation) as a reasonable *working structural
+template* only, since it's IMRaD with Vancouver numbered references, which is close to a
+generalist default. Do **not** enforce its specific numeric limits (word counts, figure counts,
+format) as blocking gates before a venue is actually chosen. Verified live (2026-09-12) against
+`journals.plos.org/ploscompbiol` for reference, kept here so the numbers exist when a venue
+decision is eventually made:
+- Research articles are IMRaD with Vancouver (numbered) references — **already matches**
+  (`\usepackage[numbers,sort&compress]{natbib}`), venue-independent enough to keep regardless.
+- Initial submission is format-free; PLOS's own guidance flags "abstracts over 300 words" as the
+  single most common first-submission defect *for that journal specifically* — not a universal
+  rule, and not binding here until PLOS Comp Biol (or any other venue with its own limit) is
+  actually chosen.
+- Requires a Data Availability Statement meeting PLOS's specific policy language — present in our
+  draft (`\section*{Data and code availability}`) but not checked against PLOS's exact phrasing;
+  defer to the final formatting pass once a venue is chosen (Workflow step 6/11), not now.
 
-## 2. MAJOR — mechanical compliance (fast, do first)
+## 2. Word counts — a density note, not a compliance gate
 
-Measured directly from the current `.tex` (word counts exclude LaTeX markup):
-
-| Element | Current | Limit | Action |
-|---|---|---|---|
-| Abstract | 333 words | 300 (PLOS Comp Biol) | Trim ~35 words |
-| Author summary | 237 words | 150 (PLOS Comp Biol, confirmed via `journals.plos.org/ploscompbiol/s/authorship`) | Trim ~90 words; also re-check it stays fully jargon-free (no "WIS," "conformal," "Vincentization" without plain-language substitution — it currently leans on "normalized WIS," "conformal recalibration" by name, which a nonspecialist reader won't parse) |
-
-Both are cheap, single-paragraph edits with no numerical or scientific-content risk. Do these
-first so every later pass works from a compliant abstract/summary rather than editing them twice.
+**Reframed (2026-09-12):** the abstract (333 words) and Author Summary (237 words) are not "over
+a limit" in any binding sense right now, since no venue is fixed. The applicable standard is the
+one in `PAPER_PLAN.md` §0: dense and compact, not verbose, but never lossy. Reread both for
+tightenable prose (redundant clauses, throat-clearing, anything sayable in fewer words without
+losing a finding, a number, or a nuance) rather than for what to cut. If a density pass happens to
+also land under 300/150 words, that's a byproduct, not the goal — and if it doesn't, that's fine
+too, as long as every sentence is earning its place. Re-apply the actual PLOS-style numeric limits
+(or whatever venue is chosen) only at the final formatting step (Workflow step 11), never as a
+drafting-stage constraint.
 
 ## 3. MAJOR — related-work completeness (found via live literature search, 2026-09-12)
 
@@ -174,9 +175,13 @@ Not blocking, but worth a decision (ask the user, don't assume):
 
 ## 10. Summary triage
 
-**MAJOR (do before anything else, in this order):** §2 word counts -> §3+§4 related-work and
-positioning (they're one editing pass: add citations, then write the differentiation paragraph
-that cites them) -> §5 EPIFORGE 19-item upgrade.
+**MAJOR (do before anything else, in this order):** §3+§4 related-work and positioning (one
+editing pass: add citations, then write the differentiation paragraph that cites them) -> §5
+EPIFORGE 19-item upgrade.
+
+**Density pass (ongoing, not a one-time gate):** §2 — tighten the abstract/Author Summary and,
+over time, every section, for compactness without content loss. Not "done" the way a citation
+add is done; revisit whenever a section is touched.
 
 **MINOR (do during the full-draft polish pass, not urgent):** §6 SI em-dash cleanup, §7 hardcoded
 cross-reference recheck, §8 optional statistical additions (decide, don't assume yes).

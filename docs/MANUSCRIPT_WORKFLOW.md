@@ -13,13 +13,15 @@ and both `pdflatex` passes before calling a step done, the same way every code c
 repo is verified before being called complete). Re-read `MANUSCRIPT_GAP_AUDIT.md` §3 (literature)
 close to actual submission — it is a dated snapshot, not a standing fact.
 
-## Step 1 — Mechanical compliance (fastest, do first)
-- Trim the abstract from 333 to ≤300 words without dropping any of the four numbered findings.
-- Trim the Author summary from 237 to ≤150 words; remove or plain-language every named technical
-  term ("WIS," "conformal recalibration," "normalized WIS") per PLOS's nonspecialist-reader intent
-  (EPIFORGE item 15).
-- Gate: recompile, confirm word counts with the same script used in the audit
-  (`python <scratchpad>/wordcount.py`-style regex count, or redo inline), zero pdflatex errors.
+## Step 1 — Density pass on the abstract and Author Summary
+- **Reframed 2026-09-12** (see `MANUSCRIPT_GAP_AUDIT.md` §2): venue is undecided, so this is not a
+  trim-to-a-limit task. Tighten both for density: cut redundant clauses and throat-clearing,
+  shorten sentences, keep every one of the four numbered findings and every number in the
+  abstract. In the Author Summary specifically, plain-language every named technical term ("WIS,"
+  "conformal recalibration," "normalized WIS") per EPIFORGE item 15's nonspecialist-reader intent,
+  since that's a completeness/accessibility improvement independent of length.
+- Gate: recompile, zero pdflatex errors. Re-run the word count out of curiosity, not as a
+  pass/fail check; report it either way.
 
 ## Step 2 — Related-work and positioning
 - Verify exact bibliographic details (volume, pages, DOI) for the four sources in

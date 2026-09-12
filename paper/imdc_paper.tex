@@ -33,50 +33,47 @@ metric-dependent model rankings, regime-shift fragility, and conformal ensembles
 
 \begin{abstract}
 \noindent
-Dengue is expanding across Brazil, and 2024 produced a record epidemic of roughly four times any
-prior year. Accurate, well-calibrated probabilistic forecasts support preparedness, but the
-relative merits of statistical, machine-learning, deep-learning, and mechanistic approaches for
-this task are unsettled, especially under the distribution shift an outbreak year imposes. We
-report a reproducible, leakage-controlled comparison of five probabilistic forecasting model
-families for the 3rd Infodengue--Mosqlimate Dengue Challenge (IMDC 2026), which requires weekly,
-state-level forecasts with full predictive intervals for the 26 mandatory Brazilian states. All
-models are evaluated through a single backtesting harness over four official retrospective seasons,
-one of which contains the 2024 outbreak, and scored by the weighted interval score (WIS). We report
-four results with implications beyond this challenge. First, no model is best across seasons: a
-global recurrent network is the most accurate model in normal seasons yet the worst on the 2024
-outlier, whereas an ensemble never incurs any member's worst-season failure. Second, the identity
-of the best model depends on the evaluation metric, because magnitude-weighted mean WIS and
+Dengue is expanding across Brazil; 2024 produced a record epidemic roughly four times any prior
+year. Accurate, calibrated probabilistic forecasts support preparedness, but which of statistical,
+machine-learning, deep-learning, and mechanistic approaches forecasts best, especially under an
+outbreak year's distribution shift, is unsettled. We report a reproducible, leakage-controlled
+comparison of five probabilistic forecasting model families for the 3rd Infodengue--Mosqlimate
+Dengue Challenge (IMDC 2026), which requires weekly, state-level, full-interval forecasts for the
+26 mandatory Brazilian states. All models are evaluated through a single backtesting harness over
+four official retrospective seasons, one of which contains the 2024 outbreak, and scored by the
+weighted interval score (WIS). We report four results with implications beyond this challenge.
+First, no model is best across seasons: a global recurrent network is most accurate in normal
+seasons yet worst on the 2024 outlier, while an ensemble never incurs any member's worst-season
+failure. Second, the best model depends on the evaluation metric: magnitude-weighted mean WIS and
 scale-free normalized WIS reward accuracy on different subsets of a highly skewed set of states.
-Third, a conformal recalibration, a post-hoc widening of the ensemble's prediction intervals by a
-factor tuned to fix their overconfidence, improves accuracy and calibration at negligible cost
-(mean WIS, a magnitude-weighted score, 1234 to 1162; normalized WIS, its scale-free counterpart,
-0.595 to 0.561; out-of-sample reduction of 6.2 percent). It acts as asymmetric insurance: the
-extra interval width costs little in an ordinary season but prevents the catastrophic under-prediction
-an extreme season would otherwise cause. Fourth, added
-model complexity did not pay: observed-climate covariates and hierarchical spatial pooling both
-failed to improve forecasts, and an internal-holdout hyperparameter gain reversed on the true
-backtest. The best model is disease-specific: for chikungunya, gradient boosting alone outperforms
-the ensemble. All code, the backtesting harness, per-state scored predictions, and validated
-submissions for four official tracks are released, with an automated test suite covering leakage,
-scoring, and every model.
+Third, a conformal recalibration, a post-hoc widening of the ensemble's intervals tuned to fix
+their overconfidence, improves accuracy and calibration at negligible cost (mean WIS, a
+magnitude-weighted score, 1234 to 1162; normalized WIS, its scale-free counterpart, 0.595 to
+0.561; out-of-sample reduction of 6.2 percent), acting as asymmetric insurance: little cost in an
+ordinary season, but it prevents the catastrophic under-prediction an extreme one would otherwise
+cause. Fourth, added model complexity did not pay: observed-climate covariates and hierarchical
+spatial pooling both failed to improve forecasts, and an internal-holdout hyperparameter gain
+reversed on the true backtest. The best model is disease-specific: for chikungunya, gradient
+boosting alone outperforms the ensemble. All code, the backtesting harness, per-state scored
+predictions, and validated submissions for four official tracks are released, with an automated
+test suite covering leakage, scoring, and every model.
 \end{abstract}
 
 \section*{Author summary}
 \noindent
 Brazil carries one of the world's largest dengue burdens, and 2024 brought an epidemic without
-precedent in the national record. Public-health agencies increasingly rely on forecasts that state
-not just a single predicted number of cases but a full range of plausible outcomes with calibrated
-uncertainty. Which forecasting method to trust is an open question, particularly during an
-exceptional season when accurate forecasts matter most. We compared five families of models,
-ranging from simple seasonal baselines to gradient boosting, deep learning, and a mechanistic
-epidemic model, on identical retrospective tests across four dengue seasons in all 26 mandatory
-Brazilian states. We found that no method is best everywhere: the deep-learning model was the most
-accurate in ordinary seasons but failed badly during the 2024 outbreak, while a simple ensemble
-that averages the models was the most dependable. We also found that the apparent winner changes
-depending on how performance is scored, a caution for forecasting leaderboards. Finally, a light
-statistical recalibration that stretched the ensemble's prediction intervals just enough to fix
-them being too narrow improved both accuracy and reliability, and
-adding more data or model complexity did not help. At the challenge's own validation-round results
+precedent in the national record. Public-health agencies increasingly rely on forecasts that give
+a full range of plausible outcomes with calibrated uncertainty, not just one predicted number.
+Which method to trust is an open question, especially in an exceptional season, when accurate
+forecasts matter most. We compared five model families, from simple seasonal baselines to
+gradient boosting, deep learning, and a mechanistic epidemic model, using identical retrospective
+tests across four dengue seasons in all 26 mandatory Brazilian states. No method is best
+everywhere: the deep-learning model was most accurate in ordinary seasons but failed badly during
+the 2024 outbreak, while a simple ensemble that averages the models was the most dependable. The
+apparent winner also changes depending on how performance is scored, a caution for forecasting
+leaderboards. Finally, a light statistical recalibration that stretched the ensemble's prediction
+intervals just enough to fix their overconfidence improved both accuracy and reliability. Adding
+more data or model complexity did not help. At the challenge's own validation-round results
 presentation, our submission was independently named one of six best-overall-performing models (of
 27 submitted) for the mandatory state-level dengue target, and one of three models with outstanding
 performance on the optional city-level target \citep{imdc2026webinar}. Our full pipeline is openly
