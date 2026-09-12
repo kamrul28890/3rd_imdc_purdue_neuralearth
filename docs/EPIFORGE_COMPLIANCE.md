@@ -25,7 +25,7 @@ closed.
 | 12 | Where possible, compare results to a benchmark or other comparator model, with justification. | Naive and seasonal-naive baselines throughout; Table 1/2 | MET |
 | 13 | Describe the forecast horizon, with justification of its length. | Methods §4.2 (16-67 week horizon from the 15-week reporting gap, tied to the challenge's own EW41-EW40 target window) | MET |
 | 14 | Present and explain uncertainty of forecasting results. | Results §2.4-2.6 (calibration, conformal recalibration); coverage tables throughout | MET |
-| 15 | Briefly summarize the results in nontechnical terms, including a nontechnical interpretation of forecast uncertainty. | `Author summary` section | **PARTIAL — currently 237 words against PLOS's 150-word limit, and leans on named jargon ("normalized WIS," "conformal recalibration") without lay substitution; fix in Workflow step 1 (see GAP_AUDIT §2)** |
+| 15 | Briefly summarize the results in nontechnical terms, including a nontechnical interpretation of forecast uncertainty. | `Author summary` section | MET. **Correction (2026-09-12):** an earlier draft of this row claimed the summary "leans on named jargon (normalized WIS, conformal recalibration)"; that was wrong, checked against the actual text, which already uses plain language throughout ("a full range of plausible outcomes with calibrated uncertainty," "a light statistical recalibration that stretched the ensemble's prediction intervals"). Length (220 words after the 2026-09-12 density pass) is not a compliance issue for this item, and venue word limits are deferred until a venue is chosen. |
 | 16 | If results are published as a data object, encourage a time-stamped version number. | Provenance manifest (SI S7 Text) records data checksums + code revision per reported number | MET (the manifest *is* the time-stamped version record; not a separate "data object" release, but satisfies the item's intent) |
 | 17 | Describe the weaknesses of the forecast, including weaknesses specific to data quality and methods. | Discussion, `Limitations` §3.6 (fold-4 partial resolution, municipal aggregation, single-team scope, Oropouche-contamination caveat added 2026-09-12) | MET |
 | 18 | If applicable to a specific epidemic, comment on potential implications for public health action and decision-making. | Discussion §3.1 (regime-shift robustness → operational model choice); mentions of the challenge's Ministry-of-Health-facing purpose in Intro | MET, could be strengthened with one explicit sentence tying back to the challenge's stated MoH decision-support purpose (see `araujo2026`'s own framing) — MINOR, not required |
@@ -33,12 +33,15 @@ closed.
 
 ## Summary
 
-17 of 19 fully MET as of 2026-09-12. One PARTIAL (item 15, tied directly to the word-count fix
-already required by PLOS Comp Biol's own author-summary limit — fixing the mechanical compliance
-gap in `MANUSCRIPT_GAP_AUDIT.md` §2 closes this item too, not a separate task). Item 16 met by a
-reasonable interpretation (the provenance manifest) rather than literally; state that
-interpretation explicitly in the SI text rather than leaving it implicit, so a reviewer doesn't
-read it as skipped.
+**18 of 19 fully MET as of 2026-09-12** (item 15 reclassified from PARTIAL to MET after checking
+the actual Author Summary text, see the correction in that row). Item 16 is met by a reasonable
+interpretation (the provenance manifest serves as the time-stamped version record) rather than
+literally; state that interpretation explicitly in the SI text rather than leaving it implicit, so
+a reviewer doesn't read it as skipped. Item 18 is met but could be strengthened by one sentence
+tying results back to the challenge's Ministry-of-Health decision-support purpose.
+
+Neither remaining improvement is a compliance failure. Both are one-sentence additions, folded
+into Workflow step 3 (the SI EPIFORGE upgrade).
 
 ## What to write in the manuscript
 

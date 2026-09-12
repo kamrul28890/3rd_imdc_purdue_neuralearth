@@ -99,11 +99,32 @@ setting: given statistical, machine-learning (ML), deep-learning (DL), and mecha
 which forecast best, and how robustly, when a season can depart by an order of magnitude from
 anything in the training record?
 
+Prior work on dengue forecasting is extensive but leaves that question open in three specific
+ways. First, most published comparisons rank models on point accuracy. A systematic review and
+network meta-analysis of 59 dengue-forecasting studies from 2014 to 2024 ranked methods on
+root-mean-square error and found simple statistical models competitive with machine learning at
+lower data and implementation cost \citep{benjarattanaporn2026}. Point accuracy does not measure
+whether a prediction interval is calibrated, which is what a preparedness decision needs. Second,
+the probabilistic comparisons that do exist mostly target short horizons. The largest, an
+evaluation across more than 180 locations worldwide, forecasts one to three months ahead
+and finds ensembles consistently among the top performers \citep{wu2025}; a Brazilian statistical
+model forecasts probabilistic epidemic bands, the activity range a coming season is expected to
+fall within, rather than a weekly trajectory \citep{freitas2025}. A full-season target, here 16 to
+67 weeks ahead because a 15-week reporting gap separates the training cutoff from the first target
+week, is a different problem: no recent case data is available near the target, so the models that
+win at one month need not win here. Third, the inaugural sprint reported that no single model
+excelled across locations and years, but did not isolate why rankings move, nor test whether the
+choice of aggregate metric itself changes the winner \citep{araujo2026}.
+
 We address this with a controlled comparison built for reproducibility and for honest evaluation
 under distribution shift. Every model is fit and scored through one backtesting harness that
 enforces leakage safety and applies the same scoring code to all forecasts, over the four official
-retrospective seasons (2022--23 through 2025--26) for the 26 mandatory states. We make the following
-contributions.
+retrospective seasons (2022--23 through 2025--26) for the 26 mandatory states. The design trades
+breadth for depth relative to multi-country evaluations \citep{wu2025}: one country, two diseases,
+a full-season horizon, and every model sharing one leakage-audited pipeline whose tests, provenance
+manifest, and per-state scored predictions are public. That depth is what makes the negative
+results and the metric-disagreement finding below checkable rather than anecdotal. We make the
+following contributions.
 
 \begin{enumerate}
 \item We show that model rankings are season-dependent and, in the outbreak year, invert: the model
@@ -716,6 +737,12 @@ and is best overall once recalibrated. The other is to prefer models whose uncer
 distribution shift, as the mechanistic model's bootstrap-of-historical-seasons intervals do. These
 observations align with evidence from collaborative forecast hubs, where combined forecasts are
 consistently competitive with or better than their members \citep{cramer2022,reich2019,sherratt2023}.
+The same holds for dengue specifically: across more than 180 locations worldwide, ensembles
+ranked consistently among the top performers at one-to-three-month horizons, including where
+individual models faltered \citep{wu2025}. Our result extends that to a full-season horizon and
+identifies the mechanism in this setting: the ensemble is never worst because its members fail in
+different seasons, and conformal recalibration then converts that robustness into the best overall
+score.
 
 \subsection{Metric choice is a reporting-standards issue}
 The identity of the best model changes with the aggregation of skill across a highly skewed set of
@@ -730,11 +757,17 @@ and per-unit relative WIS alongside it.
 Deep learning did not dominate, and simple methods, a climatological quantile model and a bootstrap
 of historical seasons, were hard to beat. This is consistent with forecasting-competition evidence
 that in small-sample, few-series regimes, parsimonious methods and combinations are strong
-\citep{makridakis2020}. The pattern recurs one sprint earlier: in IMDC24, a Bayesian baseline model
-using no climate covariates at all was among the most consistently competitive submissions across
-states and seasons \citep{araujo2026}, echoing our own finding that a covariate-free climatological
-baseline and a historical-trajectory bootstrap are hard to beat with more heavily engineered
-alternatives. The same predecessor sprint offers an independent caution about tuning ensembles on
+\citep{makridakis2020,benjarattanaporn2026}. The pattern recurs one sprint earlier: in IMDC24, a
+Bayesian baseline model using no climate covariates at all was among the most consistently
+competitive submissions across states and seasons \citep{araujo2026}, echoing our own finding that
+a covariate-free climatological baseline and a historical-trajectory bootstrap are hard to beat
+with more heavily engineered alternatives. It recurs again against an architecturally close
+competitor: on monthly dengue counts in Freetown, Sierra Leone, a parsimonious autoregressive count
+model (INGARCH with a negative-binomial observation model) beat a bidirectional LSTM with a
+negative-binomial head, the closest published analogue of our own GRU, on distributional accuracy,
+with the deep model preferred only where tail reliability mattered most \citep{sesay2026}. Three
+independent settings, two continents, and two surveillance systems give the same answer, which
+makes it a property of the forecasting regime rather than of any one pipeline. The same predecessor sprint offers an independent caution about tuning ensembles on
 limited past data: its CRPS-weighted logarithmic-pooling ensemble, with weights fit to 2023--2024
 performance, badly overestimated the true 2025 outbreak in three of five states, because the
 models it weighted most heavily had performed well on those past seasons but poorly on the actual
@@ -995,6 +1028,10 @@ Mosqlimate teams for curating and distributing the data.
 \small
 \bibitem{araujo2026} Araujo EC, Carvalho LM, Coelho FC, et al. Leveraging probabilistic forecasts for dengue preparedness and control: the 2024 Dengue Forecasting Sprint in Brazil. \emph{Proc Natl Acad Sci USA} (2026).
 \bibitem{carvalho2023} Carvalho LM, Villela DAM, Coelho FC, Bastos LS. Bayesian inference for the weights in logarithmic pooling. \emph{Bayesian Anal} 18(1):223--251 (2023).
+\bibitem{wu2025} Wu S, Meyer AG, Clemente L, Stolerman LM, Lu F, Majumder A, Verbeeck R, Masyn S, Santillana M. Ensemble approaches for short-term dengue fever forecasts: a global evaluation study. \emph{Proc Natl Acad Sci USA} 122:e2422335122 (2025).
+\bibitem{freitas2025} Freitas LP, da Cruz Ferreira DA, Lana RM, C\^amara DCP, Portella TP, Carvalho MS, et al. A statistical model for forecasting probabilistic epidemic bands for dengue cases in Brazil. \emph{Infect Dis Model} 10(4):1479--1487 (2025).
+\bibitem{sesay2026} Sesay MM, Ngunyi A, Imboga H. Probabilistic forecasting of monthly dengue cases using epidemiological and climate signals: a BiLSTM-negative binomial model versus mechanistic and count-model baselines. \emph{PLOS Glob Public Health} 6(3):e0005404 (2026).
+\bibitem{benjarattanaporn2026} Benjarattanaporn P, Adewo D, Sutton A, Lee A, Dodd PJ. Dengue forecasting models: a systematic review and network meta-analysis of relative performance. \emph{medRxiv} 2026.02.18.26346534 (2026).
 \bibitem{bracher2021} Bracher J, Ray EL, Gneiting T, Reich NG. Evaluating epidemic forecasts in an interval format. \emph{PLoS Comput Biol} 17(2):e1008618 (2021).
 \bibitem{gneiting2007} Gneiting T, Raftery AE. Strictly proper scoring rules, prediction, and estimation. \emph{J Am Stat Assoc} 102(477):359--378 (2007).
 \bibitem{romano2019} Romano Y, Patterson E, Cand\`es EJ. Conformalized quantile regression. \emph{Adv Neural Inf Process Syst} 32 (2019).

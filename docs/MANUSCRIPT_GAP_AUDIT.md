@@ -42,7 +42,30 @@ too, as long as every sentence is earning its place. Re-apply the actual PLOS-st
 (or whatever venue is chosen) only at the final formatting step (Workflow step 11), never as a
 drafting-stage constraint.
 
-## 3. MAJOR — related-work completeness (found via live literature search, 2026-09-12)
+## 3. MAJOR — related-work completeness — **CLOSED 2026-09-12** (found via live literature search)
+
+**Status: done.** All four sources below were verified against primary sources (publisher pages,
+not search snippets), added as `\bibitem` entries, and cited at the placements described. A new
+Introduction paragraph now frames prior work as three specific open gaps (point-accuracy ranking,
+short-horizon scope, unexplained ranking movement), and §4's positioning statement is folded into
+the paragraph that follows it. Verified citation details as used:
+- `wu2025`: Wu S, Meyer AG, Clemente L, Stolerman LM, Lu F, Majumder A, Verbeeck R, Masyn S,
+  Santillana M. *Proc Natl Acad Sci USA* 122:e2422335122 (2025). Issue number deliberately omitted
+  (not confirmed from a primary source; the article e-locator is unambiguous without it).
+- `freitas2025`: Freitas LP, da Cruz Ferreira DA, Lana RM, Câmara DCP, Portella TP, Carvalho MS,
+  et al. *Infect Dis Model* 10(4):1479-1487 (2025). DOI 10.1016/j.idm.2025.07.014.
+- `sesay2026`: Sesay MM, Ngunyi A, Imboga H. *PLOS Glob Public Health* 6(3):e0005404 (2026),
+  published 2026-03-27.
+- `benjarattanaporn2026`: Benjarattanaporn P, Adewo D, Sutton A, Lee A, Dodd PJ. *medRxiv*
+  2026.02.18.26346534 (2026-02-19). Preprint, not yet peer-reviewed: recheck before submission in
+  case a journal version supersedes it.
+
+One factual correction to this section's own earlier claim about Wu et al.: their coverage is
+"more than 180 locations worldwide" spanning Brazil, Colombia, Malaysia, Mexico, Thailand plus
+individual sites in Peru and Puerto Rico. An initial draft of the manuscript text said "five
+countries," which undercounts; the manuscript now says "worldwide" instead.
+
+Original findings, kept for the record:
 
 `PAPER_PLAN.md` §5 sketched a ~30-40 reference plan written before this exact literature existed
 or before we'd found it. A live search turned up four items **not currently cited anywhere** in
@@ -87,7 +110,16 @@ or before we'd found it. A live search turned up four items **not currently cite
 `\bibitem` entries** — the details above come from search-result snippets, not primary-source
 confirmation of every field.
 
-## 4. MAJOR — sharpen the novelty/positioning claim against Wu et al. 2025
+## 4. MAJOR — novelty/positioning claim against Wu et al. 2025 — **CLOSED 2026-09-12**
+
+**Status: done.** Handled as two sentences inside the "We address this with a controlled
+comparison" paragraph rather than a standalone paragraph, so the Introduction doesn't gain a
+defensive-sounding block: the design "trades breadth for depth relative to multi-country
+evaluations," naming the one-country/two-disease/full-season scope and the public leakage-audited
+pipeline, and stating that this depth is what makes the negative results and metric-disagreement
+finding checkable. The Discussion's regime-shift subsection separately credits `wu2025`'s
+dengue-specific ensemble finding and states what our result adds to it (a full-season horizon and
+the mechanism behind the robustness). Original analysis below.
 
 `imdc_paper.tex`'s Limitations already says "the comparison is single-team, so it does not
 capture the full diversity of approaches a multi-team sprint would" — an honest limitation, but
