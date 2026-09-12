@@ -27,9 +27,10 @@ metric-dependent model rankings, regime-shift fragility, and conformal ensembles
 
 \noindent This document provides the scoring definitions (S1), full model configurations (S2), the
 conformal recalibration and ensemble-composition robustness analysis (S3), normalized WIS by season
-(S4), the EPIFORGE 2020 reporting checklist (S5), exploratory data analysis (S6), and the
-reproducibility statement (S7). All numbers correspond to the committed backtest and are reproducible
-from the released pipeline.
+(S4), the EPIFORGE 2020 reporting checklist (S5), exploratory data analysis (S6), the
+reproducibility statement (S7), per-state model performance (S8), and a glossary of the technical
+terms used in the main text (S9). All numbers correspond to the committed backtest and are
+reproducible from the released pipeline.
 
 \section*{S1 Text. Scoring}
 Forecasts are submitted as the nine quantiles $\tau \in \{0.025, 0.05, 0.10, 0.25, 0.50, 0.75, 0.90,
@@ -215,29 +216,81 @@ Naive                     & 0.659 & 0.773 & 0.806 & \textbf{0.540} \\
 \end{table}
 
 \section*{S5 Text. EPIFORGE 2020 reporting checklist}
-Table~\ref{tab:epiforge} maps the recommended reporting items for epidemic forecasting research to
-their location in the manuscript and this Supporting Information.
+This manuscript follows the EPIFORGE 2020 reporting guidelines for epidemic forecasting and
+prediction research (Pollett et al.\ 2021). Table~\ref{tab:epiforge} maps all 19 recommended items,
+in the guideline's own numbering and wording, to their location in the main text and this document.
+Locations are given by section name rather than section number, so that they remain correct if the
+main text is reordered. Two items warrant a note. Item 16 concerns version-stamping results
+published as a data object: we release no standalone data object, but the provenance manifest
+described in S7 Text serves the same purpose, recording the exact data checksums and code revision
+behind every reported number. Items 18 and 19 are conditioned on applicability to a specific
+epidemic; both apply here, and are addressed for the 2024 Brazilian dengue season specifically.
 
-\begin{table}[t]
-\centering\small
-\caption{\textbf{S3 Table. EPIFORGE 2020 checklist mapping.}}
+\begin{table}[p]
+\centering\footnotesize
+\caption{\textbf{S3 Table. EPIFORGE 2020 checklist.} All 19 recommended reporting items
+(Pollett et al.\ 2021), with the location of each in this manuscript.}
 \label{tab:epiforge}
-\begin{tabular}{@{}p{0.42\textwidth}p{0.5\textwidth}@{}}
+\begin{tabular}{@{}p{0.02\textwidth}p{0.46\textwidth}p{0.44\textwidth}@{}}
 \toprule
-\textbf{Item} & \textbf{Location} \\
+\textbf{\#} & \textbf{Recommended item} & \textbf{Location} \\
 \midrule
-Study purpose and forecasting objectives & Introduction; Results, study design \\
-Forecast targets and horizons & Results, study design; Methods, data and targets \\
-Data sources and provenance & Methods, data and targets; S2 Text \\
-Data pre-processing and covariates & Methods; S2 Text (feature list) \\
-Model descriptions and assumptions & Methods, models; S1 Table \\
-Uncertainty quantification & Methods, scoring and conformal; S1, S3 Text \\
-Validation approach and leakage control & Methods, backtest design \\
-Performance metrics & Methods, scoring; S1 Text \\
-Baseline and comparator models & Results; Tables in main text \\
-Results with uncertainty and calibration & Results; Figures 2 to 5 \\
-Interpretation, generalizability, limitations & Discussion \\
-Data and code availability & Data and code availability; S7 Text \\
+\multicolumn{3}{@{}l}{\emph{Overall study description and goals}} \\
+1 & Describe the study as forecast or prediction research in at least the title or abstract. &
+Title; Abstract, first sentences; Author summary \\
+2 & Define the purpose of study and forecasting targets. &
+Introduction (contributions); Results, Study design and data \\
+3 & Fully document the methods. &
+Methods, all subsections; S1 and S2 Text \\
+4 & Identify whether the forecast was performed prospectively, in real time, and/or
+retrospectively. &
+Results, Study design and data (four retrospective seasons); Discussion, Limitations (the
+submitted 2026--27 forecast is prospective and not yet scored) \\
+\addlinespace
+\multicolumn{3}{@{}l}{\emph{Data description}} \\
+5 & Explicitly describe the origin of input source data, with references. &
+Methods, Data and targets; S2 Text \\
+6 & Provide source data with publication, or document reasons as to why this was not possible. &
+Data and code availability; S7 Text \\
+7 & Describe input data processing procedures in detail. &
+Methods, Data and targets; S2 Text (feature list) \\
+\addlinespace
+\multicolumn{3}{@{}l}{\emph{Model characteristics}} \\
+8 & State and describe the model type, and document model assumptions, including references. &
+Methods, Models; S2 Text; S1 Table \\
+9 & Make the model code available, or document the reasons why this is not possible. &
+Data and code availability; S7 Text \\
+\addlinespace
+\multicolumn{3}{@{}l}{\emph{Model evaluation}} \\
+10 & Describe the model validation, and justify the approach. &
+Methods, Backtest design and leakage control \\
+11 & Describe the forecast accuracy evaluation method used, with justification. &
+Methods, Scoring; S1 Text (formula, worked example, verification against the platform scorer) \\
+12 & Where possible, compare results to a benchmark or other comparator model, with justification. &
+Results, No single model dominates (naive and seasonal-naive baselines); Tables 1 and 2 \\
+13 & Describe the forecast horizon, with justification of its length. &
+Methods, Backtest design and leakage control (16 to 67 weeks, set by the 15-week reporting gap and
+the EW41--EW40 target season) \\
+14 & Present and explain uncertainty of forecasting results. &
+Results, Calibration and its correction; Results, An ensemble is the most robust model; Methods,
+Conformal recalibration; S1 and S3 Text \\
+\addlinespace
+\multicolumn{3}{@{}l}{\emph{Translation, interpretability, and generalizability}} \\
+15 & Briefly summarize the results in nontechnical terms, including a nontechnical interpretation
+of forecast uncertainty. &
+Author summary \\
+16 & If results are published as a data object, encourage a time-stamped version number. &
+S7 Text (provenance manifest; see the note above) \\
+17 & Describe the weaknesses of the forecast, including weaknesses specific to data quality and
+methods. &
+Discussion, Limitations \\
+18 & If applicable to a specific epidemic, comment on potential implications for public health
+action and decision-making. &
+Discussion, Robustness under regime shift; Discussion, Conformal recalibration as transferable
+insurance; Results, Onset, peak, and total burden \\
+19 & If applicable to a specific epidemic, comment on how generalizable it may be across
+populations. &
+Discussion, Limitations (two diseases, one country, 26 states spanning the full incidence range) \\
 \bottomrule
 \end{tabular}
 \end{table}

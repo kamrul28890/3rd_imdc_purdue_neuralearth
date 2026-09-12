@@ -34,14 +34,24 @@ close to actual submission — it is a dated snapshot, not a standing fact.
   citation` warnings, re-run the em-dash/cliché-vocabulary grep from `PAPER_PLAN.md` §0 on the
   new prose.
 
-## Step 3 — EPIFORGE upgrade
-- Replace `imdc_paper_SI.tex` S5 Text's informal 12-category table with the full 19-item table
-  from `docs/EPIFORGE_COMPLIANCE.md`.
-- Add the explicit compliance-claim sentence from that document's "What to write" section.
-- Confirm item 15 now reads MET (depends on Step 1 being done first) and item 16's manifest-based
-  interpretation is stated explicitly, not left implicit.
-- Gate: recompile the SI, confirm the new table fits the page width without overfull boxes beyond
-  the project's existing cosmetic tolerance (check `grep -i overfull` in the build log).
+## Step 3 — EPIFORGE upgrade — **DONE 2026-09-12**
+- S5 Text now carries the full 19-item checklist in the guideline's own numbering and wording,
+  grouped by its five categories, as a three-column table (#, item, location).
+- Locations are given by **section name, not section number**, deliberately: the SI is a separate
+  document, so cross-file `\ref` is unavailable, and hardcoded numbers are exactly the fragility
+  flagged in `MANUSCRIPT_GAP_AUDIT.md` §7. Section names survive reordering.
+- Compliance-claim sentence added, naming the guideline and the item count (19).
+- Item 16's provenance-manifest interpretation is now stated explicitly in the S5 Text preamble
+  rather than left implicit, and items 18/19's "if applicable" condition is answered explicitly
+  (both apply; addressed for the 2024 season).
+- Item 18 strengthened in the **main text**: Discussion, Robustness under regime shift now states
+  the concrete public-health recommendation (prefer a recalibrated ensemble to the single
+  best-scoring model, because the season a leaderboard-topping model fails in is by construction
+  the season with no precedent in the training record).
+- Also fixed: the SI's opening paragraph listed only S1-S7 while the document contains S8 and S9.
+- Verified: two pdflatex passes on both documents, zero errors, all 19 rows present, and a
+  baseline compile of the pre-edit SI (`git show HEAD:...`) confirmed the new table introduced
+  **zero** new overfull boxes (all four are pre-existing at identical magnitudes).
 
 ## Step 4 — Statistical-rigor decision
 - Ask the user: add the one-sentence Diebold-Mariano justification to Methods (cheap), and/or
@@ -66,7 +76,18 @@ close to actual submission — it is a dated snapshot, not a standing fact.
   `results/metrics/*.csv` — this project has already caught real staleness bugs this way twice
   (the September data-refresh resync, and today's presentation resync); treat SI numbers with the
   same suspicion as main-text numbers, not as a lower-stakes appendix.
-- Gate: recompile the SI, zero em-dashes (`grep -c "—"` returns 0), zero pdflatex errors.
+- **Fix two pre-existing overfull boxes found during Step 3** (measured against a baseline compile
+  of the pre-edit file, so these are confirmed pre-existing, not introduced):
+  - **83.6pt (~2.9 cm) past the margin at the WIS display equation in S1 Text.** This is the
+    largest overflow in either document and sits in the first SI section a reader reaches. The
+    equation puts the WIS definition and the interval-score definition on one line; splitting it
+    across two lines (or an `aligned`/`split` environment) is the obvious fix.
+  - **44.4pt (~1.5 cm) at the S2 Table** (ensemble composition sweep). Likely the long member
+    names in column 1; shorten the labels or reduce the font one step.
+  - For contrast, the main text's only overfull box is 1.76pt at the ablation table, which is
+    imperceptible and needs no action. These two do not meet that bar.
+- Gate: recompile the SI, zero em-dashes (`grep -c "—"` returns 0), zero pdflatex errors, and both
+  overfull boxes above resolved or consciously accepted with a reason.
 
 ## Step 6 — Figures and tables final polish
 - Re-open every figure referenced in the main text and SI (not yet done in the audit — see
