@@ -53,16 +53,36 @@ close to actual submission — it is a dated snapshot, not a standing fact.
   baseline compile of the pre-edit SI (`git show HEAD:...`) confirmed the new table introduced
   **zero** new overfull boxes (all four are pre-existing at identical magnitudes).
 
-## Step 4 — Statistical-rigor decision
-- Ask the user: add the one-sentence Diebold-Mariano justification to Methods (cheap), and/or
-  build a PIT-histogram SI figure (real effort — a new script converting quantile forecasts to
-  PIT values, one histogram per model)? Do not assume yes on either; these are optional per the
-  audit, not required for submission.
-- If PIT histograms are approved: write the script following this project's existing figure-script
-  conventions (`scripts/make_paper_*_fig.py`), regenerate, add as a new SI figure with its own
-  `S#` label, update the SI's figure-list intro paragraph.
-- Gate: if code was added, run the fast test suite; if only text was added, recompile and check
-  for errors as in prior steps.
+## Step 4 — Statistical-rigor additions — **DONE 2026-09-12** (both approved and built)
+- **Diebold-Mariano justification** added to Methods, Scoring, with `diebold1995` cited: states
+  that DM is the more common choice and why a block bootstrap over state-season units fits this
+  panel better (DM assumes one long weakly-dependent error series; we have 26 short,
+  cross-sectionally correlated state series with one season an order of magnitude harder).
+  Preempts the reviewer question without needing to run DM tests.
+- **PIT calibration figure** built (`scripts/make_paper_pit_fig.py`, new SI section S9 Text +
+  S7 Fig). Two implementation details that a naive version would get wrong, both documented in
+  the script docstring and the SI text:
+  - The nine quantile levels cut **unequal-width** bins (25 points at the centre, 2.5 at the
+    tails), so panels plot observed/expected share, not raw counts, which would make the wide
+    central bins look over-full by construction.
+  - Counts are discrete and tie against their own quantiles (the all-zero-median sparse case), so
+    it uses the **non-randomized PIT for discrete data** (an observation tied against $k$
+    quantiles contributes $1/(k+1)$ to each bin it could occupy). A naive assignment would charge
+    every tie to the bottom bin and manufacture a spike there.
+- The figure earned its place rather than ticking a box: it shows three things the four-level
+  reliability curve cannot. The GRU's overconfidence is symmetric (both tails over-full, centre at
+  half share); **every** model over-populates the topmost bin, which is the 2024 under-prediction
+  restated distributionally; and conformal recalibration cuts that topmost-bin excess from 4.4x to
+  2.4x nominal while leaving the rest flat.
+- Near-empty lowest bins for the mechanistic model (0.01) and conformal ensemble (0.00) are an
+  expected non-negativity artifact (lower quantiles clipped at zero, so a zero observation ties
+  rather than falling below), disclosed in the SI text so it does not read as a defect.
+- SI sections renumbered: the glossary moved S9 to S10. Verified safe first: the main text makes
+  **zero** references to SI section numbers, so all affected references were internal.
+- Gate met: fast test suite 113 passed; two pdflatex passes on both documents, zero errors, zero
+  undefined citations; the four SI overfull boxes are unchanged pre-existing ones, no new ones.
+- **Created two new hardcoded cross-references** (SI S9 Text cites main-text "Fig 8" and "Fig 9B").
+  Verified correct against the current figure order at time of writing. Add to the Step 7 recheck.
 
 ## Step 5 — Full SI audit
 - Read `imdc_paper_SI.tex` end to end (already done once for this workflow's own drafting, but
@@ -102,6 +122,11 @@ close to actual submission — it is a dated snapshot, not a standing fact.
   no automated gate here, this is a human/visual-judgment step.
 
 ## Step 7 — Full numbers-consistency pass
+- **Cross-reference recheck (accumulating list).** The SI is a separate document, so it cannot
+  `\ref` into the main text and every main-text pointer in it is a hardcoded string. Verify each
+  against the then-current numbering: SI S10 Text glossary cites "Results Section~2.11"; SI S9
+  Text cites "Fig 8" (Calibration and its correction) and "Fig 9B" (WIS decomposition). All three
+  were correct when written; they are exactly what goes stale when a section or figure is added.
 - Cross-check every number that appears in the abstract, author summary, results tables, and
   in-text citations of specific figures against the current `results/metrics/*.csv` files, treating
   this exactly like the September resync and the presentation resync earlier this session: a

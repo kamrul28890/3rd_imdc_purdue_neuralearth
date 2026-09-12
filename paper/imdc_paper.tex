@@ -921,6 +921,14 @@ directional (over- and under-prediction) penalties, a scale-free per-unit relati
 normalized WIS (sum of WIS divided by sum of observed cases) that the challenge adopts as its headline
 metric.
 
+Model comparisons are tested by a block bootstrap over whole state-season units
+(Section~\ref{sec:significance}) rather than by a Diebold-Mariano test \citep{diebold1995}, the
+more common choice for comparing two forecast series. The Diebold-Mariano statistic is built for a
+single long series of forecast errors with weak serial dependence. Our panel is 26 short state
+series that are cross-sectionally correlated, with one season an order of magnitude harder than
+the rest, so resampling whole state-season blocks preserves the dependence structure that an
+asymptotic test on pooled errors would assume away.
+
 \subsection{Models}
 \textbf{Baselines.} A naive model (last observed value with empirical horizon-difference quantiles), a
 seasonal-naive model (same-epidemiological-week history), and a climatological quantile model (direct
@@ -1037,6 +1045,7 @@ Mosqlimate teams for curating and distributing the data.
 \bibitem{freitas2025} Freitas LP, da Cruz Ferreira DA, Lana RM, C\^amara DCP, Portella TP, Carvalho MS, et al. A statistical model for forecasting probabilistic epidemic bands for dengue cases in Brazil. \emph{Infect Dis Model} 10(4):1479--1487 (2025).
 \bibitem{sesay2026} Sesay MM, Ngunyi A, Imboga H. Probabilistic forecasting of monthly dengue cases using epidemiological and climate signals: a BiLSTM-negative binomial model versus mechanistic and count-model baselines. \emph{PLOS Glob Public Health} 6(3):e0005404 (2026).
 \bibitem{benjarattanaporn2026} Benjarattanaporn P, Adewo D, Sutton A, Lee A, Dodd PJ. Dengue forecasting models: a systematic review and network meta-analysis of relative performance. \emph{medRxiv} 2026.02.18.26346534 (2026).
+\bibitem{diebold1995} Diebold FX, Mariano RS. Comparing predictive accuracy. \emph{J Bus Econ Stat} 13(3):253--263 (1995).
 \bibitem{bracher2021} Bracher J, Ray EL, Gneiting T, Reich NG. Evaluating epidemic forecasts in an interval format. \emph{PLoS Comput Biol} 17(2):e1008618 (2021).
 \bibitem{gneiting2007} Gneiting T, Raftery AE. Strictly proper scoring rules, prediction, and estimation. \emph{J Am Stat Assoc} 102(477):359--378 (2007).
 \bibitem{romano2019} Romano Y, Patterson E, Cand\`es EJ. Conformalized quantile regression. \emph{Adv Neural Inf Process Syst} 32 (2019).

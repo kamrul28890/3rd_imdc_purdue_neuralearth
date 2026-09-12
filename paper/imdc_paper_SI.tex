@@ -28,9 +28,9 @@ metric-dependent model rankings, regime-shift fragility, and conformal ensembles
 \noindent This document provides the scoring definitions (S1), full model configurations (S2), the
 conformal recalibration and ensemble-composition robustness analysis (S3), normalized WIS by season
 (S4), the EPIFORGE 2020 reporting checklist (S5), exploratory data analysis (S6), the
-reproducibility statement (S7), per-state model performance (S8), and a glossary of the technical
-terms used in the main text (S9). All numbers correspond to the committed backtest and are
-reproducible from the released pipeline.
+reproducibility statement (S7), per-state model performance (S8), calibration by percentile of the
+predictive distribution (S9), and a glossary of the technical terms used in the main text (S10).
+All numbers correspond to the committed backtest and are reproducible from the released pipeline.
 
 \section*{S1 Text. Scoring}
 Forecasts are submitted as the nine quantiles $\tau \in \{0.025, 0.05, 0.10, 0.25, 0.50, 0.75, 0.90,
@@ -359,7 +359,48 @@ relative WIS by model and state, averaged over the four seasons. Green is better
 is worse.}
 \end{figure}
 
-\section*{S9 Text. Glossary}
+\section*{S9 Text. Calibration by percentile of the predictive distribution}
+The reliability curve in the main text (Fig 8, Calibration and its correction) summarizes
+calibration at four interval levels.
+Fig~S7 shows where in the predictive distribution the miscalibration sits, using the probability
+integral transform (PIT): a calibrated forecast places the observation uniformly across its own
+distribution, so each of the ten bins cut by the nine submitted quantiles should hold its nominal
+share. Two implementation details matter for quantile-reported count data. The ten bins have
+unequal widths (25 percentage points at the centre, 2.5 at the tails), so raw counts would make
+the central bins look over-full by construction; every panel therefore plots the ratio of observed
+to expected share, where 1.0 is calibrated at any bin width. Case counts are also discrete and
+often tie against their own predicted quantiles, so we use the non-randomized PIT for discrete
+data: an observation tied against $k$ quantiles contributes $1/(k+1)$ to each bin it could occupy,
+which is deterministic and reproducible, unlike the randomized alternative.
+
+Three features are visible that the four-level reliability curve cannot show. First, the deep
+network's overconfidence is symmetric and severe: both tail bins are over-full (3.5 and 9.6 times
+their nominal share) while the central half is at roughly half its share, the signature of
+intervals that are uniformly too narrow rather than merely mis-centred. Second, every model,
+including the well-calibrated gradient-boosted one, carries an excess in the topmost bin. That
+excess is the same under-prediction the WIS decomposition attributes to the 2024 season (main
+text, Fig 9B), seen here as a distributional rather than a seasonal statement: the observation
+lands above the 97.5th percentile far more often than it should, and no model family avoids this.
+Third, conformal recalibration cuts the ensemble's topmost-bin excess from 4.4 to 2.4 times
+nominal while leaving the rest of the distribution close to flat, which is the intended asymmetric
+effect stated in the main text made visible bin by bin.
+
+The mechanistic model and the recalibrated ensemble show near-empty lowest bins (ratios of 0.01
+and 0.00). This is an expected consequence of non-negativity rather than a defect: their lower
+quantiles are clipped at zero, an observation of zero then ties against them, and the
+non-randomized PIT spreads that tie across the bins it could occupy instead of charging it to the
+bottom bin. Widening intervals downward cannot help a count that is already at its floor.
+
+\begin{figure}[t]\centering
+\includegraphics[width=\textwidth]{../results/figures/paper_pit.png}
+\caption{\textbf{S7 Fig. PIT calibration by model.} Ratio of observed to expected share in each of
+the ten bins cut by the nine submitted quantile levels, so 1.0 (dashed line) is calibrated at any
+bin width. A U shape indicates intervals that are too narrow, a central hump intervals that are
+too wide, and a tilt indicates bias. The tallest bar in each panel is labelled, since the shared
+vertical scale is set by the deep network's outlier. Computed on all four seasons and 26 states.}
+\end{figure}
+
+\section*{S10 Text. Glossary}
 Terms used throughout the main text and this document, in order of first appearance.
 
 \begin{itemize}
