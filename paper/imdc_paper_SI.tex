@@ -37,9 +37,12 @@ Forecasts are submitted as the nine quantiles $\tau \in \{0.025, 0.05, 0.10, 0.2
 0.95, 0.975\}$ per state and week, which define the median and the four central prediction intervals
 at nominal levels 50, 80, 90, and 95 percent. The weighted interval score is
 \[
-\mathrm{WIS}(F,y)=\frac{1}{K+\tfrac12}\Big[\tfrac12\,|y-m| + \sum_{k=1}^{K}\frac{\alpha_k}{2}\,
-\mathrm{IS}_{\alpha_k}(\ell_k,u_k,y)\Big],\qquad
-\mathrm{IS}_{\alpha}(\ell,u,y)=(u-\ell)+\tfrac{2}{\alpha}(\ell-y)\mathbf{1}\{y<\ell\}+\tfrac{2}{\alpha}(y-u)\mathbf{1}\{y>u\},
+\begin{aligned}
+\mathrm{WIS}(F,y)&=\frac{1}{K+\tfrac12}\Big[\tfrac12\,|y-m| + \sum_{k=1}^{K}\frac{\alpha_k}{2}\,
+\mathrm{IS}_{\alpha_k}(\ell_k,u_k,y)\Big],\\[0.35em]
+\mathrm{IS}_{\alpha}(\ell,u,y)&=(u-\ell)+\tfrac{2}{\alpha}(\ell-y)\mathbf{1}\{y<\ell\}
++\tfrac{2}{\alpha}(y-u)\mathbf{1}\{y>u\},
+\end{aligned}
 \]
 with $m$ the predictive median, $K=4$ central intervals, and $\alpha_k = 1 - L_k/100$. This equals the
 mean pinball loss over the nine quantiles up to the constant weighting, the exact discrete
@@ -139,8 +142,9 @@ output outperforms recalibrating any single member, because the per-quantile med
 otherwise dilutes a member's widening (recalibrating the deep-learning member alone yields mean WIS
 1273 versus 1162 for the ensemble-output recalibration).
 
-\noindent\textbf{Member-composition robustness (S2 Table).} Table~\ref{tab:sweep} scores every
-member subset under the same conformal recalibration. The chosen three-member ensemble is close to the
+\noindent\textbf{Member-composition robustness (S2 Table).} Table~\ref{tab:sweep} scores all eleven
+two-, three-, and four-member subsets of the four candidate models under the same conformal
+recalibration. The chosen three-member ensemble is close to the
 best composition by the headline normalized WIS, and no subset is better on both the all-season and the
 ordinary-season metric. The subset that appears best by all-season mean WIS and normalized WIS
 (climatological plus mechanistic, 1141 and 0.551) is the worst of the strong subsets on ordinary
@@ -152,13 +156,21 @@ overfitting the tuning-fold discipline exists to prevent. Scoring each candidate
 (the only fold this project's own discipline permits for such a decision) instead of on the full
 four-season table exposes this directly: the climatological-plus-mechanistic subset that looks best
 on the reported seasons is in fact one of the worst by that fold-1 criterion (normalized WIS 0.390,
-against 0.306 for the chosen composition and 0.282 for the single best-scoring subset,
-XGBoost plus GRU, which is itself the worst composition of all on the reported ordinary-season
-metric, 0.365 notwithstanding) -- a within-study demonstration of why ensemble composition should be
-fixed by the tuning fold and not by inspecting the headline table.
+against 0.306 for the chosen composition), a within-study demonstration of why ensemble composition
+should be fixed by the tuning fold and not by inspecting the headline table.
+
+One subset does edge the chosen composition on fold 1: XGBoost plus GRU, at 0.282 against 0.306. We
+did not adopt it, for the same reason the rest of this analysis gives. The composition was fixed in
+advance by structure, one baseline plus one gradient-boosted plus one deep model, rather than
+selected from this table, and a margin of 0.024 picked out of eleven candidates scored on a single
+fold is the search artifact this discipline exists to discount, not evidence against a pre-specified
+choice. That subset is also the worst of all eleven on all-season normalized WIS (0.601), because
+dropping the climatological member leaves the ensemble with no component that handles the 2024
+outlier; its strong ordinary-season figure (0.365, the best in the table) is the same
+metric-disagreement pattern seen throughout, not a second reason to prefer it.
 
 \begin{table}[t]
-\centering\small
+\centering\footnotesize
 \caption{\textbf{S2 Table. Ensemble composition sweep} (each subset with conformal recalibration).
 nWIS is normalized WIS; nWIS ordinary excludes the 2024 outlier (fold 2). Fold-1 nWIS is the same
 quantity computed on the tuning fold alone, the only basis this project's discipline permits for
@@ -170,11 +182,14 @@ check. The chosen composition is in bold.}
 \textbf{Members} & \textbf{Mean WIS} & \textbf{nWIS all} & \textbf{nWIS ordinary} & \textbf{Fold-1 nWIS} \\
 \midrule
 Climatological + Mechanistic & 1141 & 0.551 & 0.455 & 0.390 \\
-\textbf{Climatological + XGBoost + GRU (chosen)} & \textbf{1162} & \textbf{0.561} & \textbf{0.375} & \textbf{0.306} \\
+\textbf{Climatological + XGBoost + GRU} & \textbf{1162} & \textbf{0.561} & \textbf{0.375} & \textbf{0.306} \\
 Climatological + GRU + Mechanistic & 1170 & 0.565 & 0.421 & 0.372 \\
+Climatological + XGBoost + Mechanistic & 1174 & 0.567 & 0.416 & 0.358 \\
 Climatological + XGBoost + GRU + Mechanistic & 1182 & 0.571 & 0.386 & 0.335 \\
 GRU + Mechanistic & 1194 & 0.576 & 0.377 & 0.343 \\
 Climatological + GRU & 1202 & 0.580 & 0.373 & 0.309 \\
+XGBoost + GRU + Mechanistic & 1204 & 0.581 & 0.398 & 0.336 \\
+Climatological + XGBoost & 1207 & 0.583 & 0.389 & 0.310 \\
 XGBoost + Mechanistic & 1211 & 0.585 & 0.408 & 0.335 \\
 XGBoost + GRU & 1245 & 0.601 & 0.365 & 0.282 \\
 \bottomrule
@@ -404,55 +419,55 @@ vertical scale is set by the deep network's outlier. Computed on all four season
 Terms used throughout the main text and this document, in order of first appearance.
 
 \begin{itemize}
-\item \textbf{WIS (weighted interval score)} — the challenge's scoring rule for a probabilistic
+\item \textbf{WIS (weighted interval score)}:the challenge's scoring rule for a probabilistic
 forecast; combines median accuracy with interval width and coverage into one number, lower is
 better (S1 Text gives the formula and a worked example).
-\item \textbf{Coverage (nominal vs.\ empirical)} — nominal coverage is an interval's stated
+\item \textbf{Coverage (nominal vs.\ empirical)}:nominal coverage is an interval's stated
 probability (e.g.\ 90 percent for the 90 percent interval); empirical coverage is the fraction of
 observations it actually contained. A well-calibrated model has the two close together.
-\item \textbf{Sharpness} — how narrow, and therefore informative, a model's prediction intervals
+\item \textbf{Sharpness}:how narrow, and therefore informative, a model's prediction intervals
 are, independent of whether they are well calibrated.
-\item \textbf{Dispersion, under-prediction, over-prediction (WIS components)} — the three
+\item \textbf{Dispersion, under-prediction, over-prediction (WIS components)}:the three
 non-negative pieces WIS decomposes into: dispersion is the interval-width penalty present even for
 a perfectly centered forecast; the other two are penalties for the observation falling above or
 below the stated interval.
-\item \textbf{Relative WIS} — one model's WIS divided by a baseline model's WIS on the same
+\item \textbf{Relative WIS}:one model's WIS divided by a baseline model's WIS on the same
 forecasting units, a pairwise comparison (Cramer et al.\ 2022) that removes shared, unit-level
 variance; we report its logarithm so a model twice as good and twice as bad are symmetric.
-\item \textbf{Normalized WIS} — the sum of WIS divided by the sum of observed cases; scale-free
+\item \textbf{Normalized WIS}:the sum of WIS divided by the sum of observed cases; scale-free
 across states/cities of very different size, and the challenge's own headline metric.
-\item \textbf{Vincentization} — combining several models' forecasts by taking, at every quantile
+\item \textbf{Vincentization}:combining several models' forecasts by taking, at every quantile
 level separately, the median of the models' values at that level.
-\item \textbf{Conformalized quantile regression (CQR)} — calibrating one model's own quantile
+\item \textbf{Conformalized quantile regression (CQR)}:calibrating one model's own quantile
 predictions, during fitting, by measuring on held-out data how much each quantile needs to shift to
 reach its nominal coverage.
-\item \textbf{Conformal recalibration (this paper's ensemble-level step)} — a separate,
+\item \textbf{Conformal recalibration (this paper's ensemble-level step)}:a separate,
 after-the-fact widening of the already-combined ensemble's intervals, by a multiplicative factor per
 interval level tuned on one season and reused unchanged thereafter; distinct from CQR, which
 calibrates one model during fitting rather than the combined ensemble afterward.
-\item \textbf{Synthetic-origin panel} — the training set built for XGBoost/LightGBM/GRU: every historical
+\item \textbf{Synthetic-origin panel}:the training set built for XGBoost/LightGBM/GRU: every historical
 week within a fold's cutoff-filtered history becomes a candidate forecast origin, crossed with
 horizons 1--67 weeks ahead, so a handful of true evaluation windows becomes tens of thousands of
 training rows.
-\item \textbf{Block bootstrap} — a resampling technique that repeatedly draws whole state-season
+\item \textbf{Block bootstrap}:a resampling technique that repeatedly draws whole state-season
 units (not individual weeks) with replacement to estimate how much a summary statistic (e.g.\
 normalized WIS) would vary under the data's actual dependence structure.
-\item \textbf{Paired comparison} — comparing two models' scores on the exact same forecasting units
+\item \textbf{Paired comparison}:comparing two models' scores on the exact same forecasting units
 and looking at the difference, rather than comparing their two separate score distributions; cancels
 variance that is common to both models (e.g.\ from an unusually hard season).
-\item \textbf{Negative-binomial (head/distribution)} — a count-data distribution more flexible than
+\item \textbf{Negative-binomial (head/distribution)}:a count-data distribution more flexible than
 Poisson, allowing variance to exceed the mean, as case-count data typically do; the GRU's output
 layer and the mechanistic model's observation model both use it.
-\item \textbf{Richards curve} — a flexible, S-shaped growth-then-plateau curve classically used to
+\item \textbf{Richards curve}:a flexible, S-shaped growth-then-plateau curve classically used to
 summarize an epidemic's rise and fall over a season; the mechanistic model fits one per historical
 season and resamples from these fits to build future trajectories.
-\item \textbf{Distributed-lag non-linear model (DLNM)} — a modeling structure that lets a
+\item \textbf{Distributed-lag non-linear model (DLNM)}:a modeling structure that lets a
 covariate's effect on the outcome be both delayed (this week's climate affecting cases several
 weeks later) and non-linear in the covariate's own value.
-\item \textbf{Empirical-Bayes pooling (shrinkage)} — partially pulling each unit's (e.g.\ each
+\item \textbf{Empirical-Bayes pooling (shrinkage)}:partially pulling each unit's (e.g.\ each
 state's) own estimate toward a shared average across a group of units, to borrow statistical
 strength when individual units are noisy.
-\item \textbf{Onset week, peak week/magnitude, total cases (operational summaries)} — decision-relevant
+\item \textbf{Onset week, peak week/magnitude, total cases (operational summaries)}:decision-relevant
 quantities WIS does not directly show: the first week a series reaches a fraction of its own peak;
 the timing and size of the true peak week; and the season's total case count; each reported as an
 error relative to the true value (Results Section~2.11 of the main text).

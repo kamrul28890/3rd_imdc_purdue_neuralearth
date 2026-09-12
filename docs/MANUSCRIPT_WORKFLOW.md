@@ -84,7 +84,37 @@ close to actual submission — it is a dated snapshot, not a standing fact.
 - **Created two new hardcoded cross-references** (SI S9 Text cites main-text "Fig 8" and "Fig 9B").
   Verified correct against the current figure order at time of writing. Add to the Step 7 recheck.
 
-## Step 5 — Full SI audit
+## Step 5 — Full SI audit — **DONE 2026-09-12**
+
+Completed: all 17 em-dashes fixed (uniform `\textbf{term} —` glossary separator, replaced with a
+colon, which reads better than a comma for a glossary); the 83.6pt equation overflow eliminated by
+splitting the WIS and interval-score definitions into an `aligned` block; the S2 Table overflow cut
+from 44.4pt to 6.9pt (`\footnotesize` plus removing a redundant "(chosen)" label that duplicated
+what the caption already says); "Results Section~2.11" re-verified as still correct.
+
+**Two substantive defects the numbers check surfaced, neither of which was on the audit list:**
+1. **S2 Table claimed to score "every member subset" but showed 8 of 11.** Recomputing the full
+   sweep from `final_scored.csv` reproduced all 8 published rows exactly and revealed three
+   missing subsets (Climatological+XGBoost+Mechanistic 1174/0.567/0.416/0.358;
+   XGBoost+GRU+Mechanistic 1204/0.581/0.398/0.336; Climatological+XGBoost 1207/0.583/0.389/0.310).
+   All three added, so the completeness claim is now true and checkable. None of them changes any
+   claim in the surrounding text, which was re-verified against the full 11.
+2. **A clause inverted a fact.** The text described XGBoost+GRU as "the worst composition of all on
+   the reported ordinary-season metric, 0.365 notwithstanding." Its 0.365 is the *best*
+   ordinary-season value in the table; it is the worst on *all-season* normalized WIS (0.601). The
+   clause also glided past a real tension with "notwithstanding": that subset beats the deployed
+   composition on fold 1 (0.282 vs 0.306), which is the criterion the same paragraph argues should
+   govern. Rewritten to state the tension plainly and answer it: the composition was fixed in
+   advance by structure (one baseline, one gradient-boosted, one deep model) rather than selected
+   from the table, and a 0.024 margin picked out of eleven candidates on a single fold is the
+   search artifact this discipline exists to discount. The honest version strengthens the
+   paragraph's own argument instead of hedging around it.
+
+Verified: S4 Table reproduced exactly from current results; S2 Table's 8 original rows reproduced
+exactly; zero em-dashes; zero errors; remaining overfull boxes are 0.43pt, 6.9pt, and 3.97pt, all
+imperceptible and comparable to the main text's 1.76pt.
+
+### Original step definition (kept for reference)
 - Read `imdc_paper_SI.tex` end to end (already done once for this workflow's own drafting, but
   re-read after Steps 1-4 land, since they touch it).
 - Fix all 17 em-dash instances in S9 Text per `MANUSCRIPT_GAP_AUDIT.md` §6 — rewrite each as
