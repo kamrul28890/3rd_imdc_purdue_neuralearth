@@ -463,6 +463,70 @@ xgb_quantile swap is adopted in the paper, since the OLD lgbm-based ensemble's o
 already wrong (1216/0.555/0.333 stale vs 1173/0.566/0.381 correct) before any of tonight's new
 models are even considered.
 
+## 6d. Reading the IMDC24 organizers' own paper (2026-09-12): log-linear pooling ablation
+
+The user shared the inaugural edition's organizer paper (Araujo et al. 2026, PNAS, "Leveraging
+probabilistic forecasts for dengue preparedness and control: The 2024 Dengue Forecasting Sprint in
+Brazil") and asked whether we're missing anything it does. Full comparison and the four resulting
+paper edits (an independent-confirmation citation for our own fold-1-overfitting finding, a
+citation for a predecessor no-climate-data baseline winning consistently, an Oropouche-fever
+notification-contamination caveat for the 2024 outlier, and a scope contrast noting our 26-state
+design vs. their 5) are in `imdc_paper.tex`'s Discussion/Limitations - not repeated here. This
+entry covers the one item that needed new code: their ensemble methodology combines models by
+**log-linear (logarithmic) pooling** of parametric (log-normal) predictive distributions, a
+genuinely different combination rule from our per-quantile-median Vincentization - precision-weighted
+distributional pooling vs. an order-statistic median.
+
+**Implemented** (`imdc.models.ensemble.log_linear_pool`, 4 new tests in `test_ensemble.py`): fits a
+per-row shifted-lognormal (OLS of `log1p(quantile)` against the standard-normal quantile of each of
+the 9 canonical levels, vectorized since the levels are fixed) to each model's predictive
+distribution, then combines via the closed-form precision-weighted pooling formula for lognormal
+components (`tau_pool = sum(w_k / sigma_k^2)`, `mu_pool = tau_pool^-1 * sum(w_k * mu_k / sigma_k^2)`),
+regenerating the 9 output quantiles from the pooled `(mu, sigma)`. Guarantees a unimodal combined
+distribution by construction, unlike Vincentization.
+
+**Checked** (`scripts/ablation_log_linear_pool.py`) as a drop-in replacement for Vincentization on
+the deployed 3-member ensemble (climatological\_quantile + xgb\_quantile + gru\_negbin), both with
+equal weights (mirrors their E1) and fold-1-only inverse-WIS weights (mirrors their E2, but tuned
+only on the designated tuning fold rather than "whichever past season" - the exact overfitting
+their own E2 fell into for the 2025 season, see below), each with the same conformal recalibration
+applied on top exactly as for the deployed ensemble. Weight choice barely mattered (equal vs.
+fold-1-invWIS gave nearly identical results); the combination RULE is what drove the difference.
+
+**Result - genuinely nuanced, not a clean win or loss.** Conformal-calibrated log-linear pooling
+(equal weights) wins 3 of 4 folds, including fold 1 - the ONLY fold this project's tuning
+discipline permits for adoption decisions (WIS 308.80 vs. the deployed ensemble's 337.27, an 8.4%
+improvement) - and wins the ordinary-season headline metric, normWIS\_ex2024 (0.338 vs. 0.375). By
+the letter of the fold-1 rule, this candidate passes where every other ablation this session has
+tried failed. But it loses on raw all-fold WIS (1224.11 vs. 1162.20) and normWIS\_all (0.591 vs.
+0.561), entirely concentrated in fold 2, the 2024 outbreak: WIS 3630.04 vs. 3297.43 (+10.1%), and
+90%/95% coverage BOTH further from nominal despite identical conformal widening (64%/79% vs.
+70%/83%). Full per-fold decomposition:
+
+| variant | fold 1 WIS | fold 2 WIS | fold 2 cov90 | fold 2 cov95 | all WIS | normWIS_all | normWIS_ex2024 |
+|---|---|---|---|---|---|---|---|
+| Vincentization (deployed) | 337.27 | 3297.43 | 0.70 | 0.83 | 1162.20 | 0.5610 | 0.3746 |
+| log-linear, equal weights | **308.80** | 3630.04 | 0.64 | 0.79 | 1224.11 | 0.5909 | **0.3379** |
+| log-linear, fold-1 invWIS | 309.31 | (~same) | (~same) | (~same) | 1227.18 | 0.5924 | 0.3373 |
+
+Mechanism: precision-weighted pooling is sharper than a per-quantile median in ordinary seasons
+(exactly its selling point - it wins folds 1, 3, 4), but that same sharpness narrows the combined
+tails relative to Vincentization's order-statistic median specifically when one member's tail
+needs to dominate, i.e. in the outbreak season this whole ensemble-plus-conformal design exists to
+protect against.
+
+**Decision: NOT adopted**, despite passing the formal fold-1 check - a case where the letter and
+the spirit of this project's own tuning discipline diverge. The fold-1 rule exists to prevent
+tuning the ensemble to the specific reporting folds (2-3) it is judged on; it does not exist to
+license a change that measurably weakens the catastrophic-season robustness that is the deployed
+ensemble's entire reason for existing. Overriding a mechanical rule-pass with the substantive
+judgment the rule is meant to encode is itself worth recording as precedent, not just this one
+result. `run_ensemble.py`'s `MEMBERS` and combination rule (Vincentization + conformal) are
+unchanged. Reported as a full ablation-table row plus a Discussion paragraph in the paper
+(`imdc_paper.tex` Sec 2.8/§sec:negative), since the nuance - wins the rule, loses the point of the
+rule - is itself the informative part, matching how this project already reports contradictory
+findings rather than picking the number that looks best.
+
 ## 7. Suggested calendar
 
 - **Now → ~Jul 25:** engineering hardening (Workstream C) + start ECMWF features; prep the Jul 31 webinar.

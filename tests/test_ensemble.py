@@ -3,9 +3,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from imdc.config import QUANTILE_COLUMNS
+from scipy.stats import norm
+
+from imdc.config import QUANTILE_COLUMNS, QUANTILE_LEVELS
 from imdc.evaluation.postprocess import enforce_monotonicity
-from imdc.models.ensemble import inverse_wis_weights, vincentization, weighted_ensemble
+from imdc.models.ensemble import inverse_wis_weights, log_linear_pool, vincentization, weighted_ensemble
 
 
 def _mk(model, uf, fold, base, observed):
@@ -80,6 +82,62 @@ def test_vincentization_keeps_rows_with_no_observed_value():
     ens = vincentization(preds, ["m_a", "m_b", "m_c"])
     assert set(ens["uf"]) == {"SP", "RJ"}
     assert ens.set_index("uf").loc["SP", "pred"] == pytest.approx(120)
+
+
+def _mk_lognormal_row(model, uf, fold, mu, sigma, observed):
+    """A prediction row whose 9 quantiles are EXACTLY expm1(mu + sigma*z) for the canonical
+    levels, i.e. a true shifted-lognormal - so `log_linear_pool`'s per-row OLS fit recovers
+    (mu, sigma) exactly, making the pooled output exactly predictable in tests below."""
+    row = {"model": model, "uf": uf, "date": pd.Timestamp("2023-01-01"), "fold_id": fold,
+           "horizon_weeks": 16, "observed_value": observed}
+    for level, col in zip(QUANTILE_LEVELS, QUANTILE_COLUMNS):
+        row[col] = np.expm1(mu + sigma * norm.ppf(level))
+    return row
+
+
+def test_log_linear_pool_of_single_model_is_that_model():
+    preds = pd.DataFrame([_mk_lognormal_row("m_a", "SP", 1, mu=5.0, sigma=0.5, observed=150)])
+    ens = log_linear_pool(preds, ["m_a"]).set_index("uf")
+    expected = preds.set_index("uf")
+    for col in QUANTILE_COLUMNS:
+        assert ens.loc["SP", col] == pytest.approx(expected.loc["SP", col], rel=1e-6)
+
+
+def test_log_linear_pool_is_monotone():
+    preds = pd.DataFrame([
+        _mk_lognormal_row("m_a", "SP", 1, mu=5.0, sigma=0.3, observed=150),
+        _mk_lognormal_row("m_b", "SP", 1, mu=5.4, sigma=0.8, observed=150),
+    ])
+    mono = enforce_monotonicity(log_linear_pool(preds, ["m_a", "m_b"]))
+    assert mono.attrs["frac_rows_needing_reordering"] == pytest.approx(0.0)
+
+
+def test_log_linear_pool_equal_weight_mu_is_precision_weighted_not_arithmetic_mean():
+    """With equal weights but different sigmas, the pooled mu is a PRECISION-weighted average
+    (pulled toward the sharper model's mu), not a plain arithmetic mean of the two mus - the
+    defining difference from Vincentization/weighted_ensemble's order-statistic combination."""
+    preds = pd.DataFrame([
+        _mk_lognormal_row("sharp", "SP", 1, mu=5.0, sigma=0.2, observed=150),
+        _mk_lognormal_row("wide", "SP", 1, mu=6.0, sigma=1.0, observed=150),
+    ])
+    ens = log_linear_pool(preds, ["sharp", "wide"]).set_index("uf")
+    pooled_median = np.log1p(ens.loc["SP", "pred"])  # z=0 at the median level -> mu_pool directly
+    arithmetic_mean_mu = 5.5
+    assert abs(pooled_median - 5.0) < abs(pooled_median - arithmetic_mean_mu)
+
+
+def test_log_linear_pool_more_weight_on_sharp_model_sharpens_pool():
+    """Pooling combines precision (1/sigma^2), so up-weighting the already-sharper model should
+    make the pooled distribution sharper still (narrower spread), unlike a linear mixture."""
+    preds = pd.DataFrame([
+        _mk_lognormal_row("sharp", "SP", 1, mu=5.0, sigma=0.2, observed=150),
+        _mk_lognormal_row("wide", "SP", 1, mu=5.0, sigma=1.0, observed=150),
+    ])
+    equal = log_linear_pool(preds, ["sharp", "wide"], weights={"sharp": 0.5, "wide": 0.5}).set_index("uf")
+    sharp_weighted = log_linear_pool(preds, ["sharp", "wide"], weights={"sharp": 0.9, "wide": 0.1}).set_index("uf")
+    equal_width = equal.loc["SP", "upper_95"] - equal.loc["SP", "lower_95"]
+    sharp_width = sharp_weighted.loc["SP", "upper_95"] - sharp_weighted.loc["SP", "lower_95"]
+    assert sharp_width < equal_width
 
 
 def test_inverse_wis_weights_favor_lower_wis():

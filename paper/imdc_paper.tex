@@ -118,9 +118,10 @@ artifact, and we argue for reporting both (Section~\ref{sec:metric}).
 \item We introduce a conformal recalibration of the ensemble intervals that improves accuracy and
 calibration at negligible cost and functions as asymmetric insurance against catastrophic
 under-prediction (Section~\ref{sec:conformal}).
-\item We document informative negative results: added covariates, hierarchical pooling, and
-hyperparameter tuning each failed to improve forecasts, which clarifies where the predictable signal
-in this problem lies (Section~\ref{sec:negative}).
+\item We document informative negative results: added covariates, hierarchical pooling,
+hyperparameter tuning, and an alternative ensemble-combination rule each failed to improve
+forecasts where it mattered most, which clarifies where the predictable signal in this problem
+lies (Section~\ref{sec:negative}).
 \item We show that the best model is disease-specific, using chikungunya as a contrasting target
 (Section~\ref{sec:chik}), and we release the complete, tested pipeline.
 \end{enumerate}
@@ -456,7 +457,7 @@ over-prediction.}
 \end{figure}
 
 \subsection{Added complexity did not improve forecasts}\label{sec:negative}
-Three interventions that plausibly should have helped did not (Table~\ref{tab:ablation}). First,
+Four interventions that plausibly should have helped did not (Table~\ref{tab:ablation}). First,
 adding observed-climate covariates to the gradient-boosted model, following the distributed-lag
 non-linear (DLNM) structure of the strongest model in the 2024 sprint, which lets a covariate's
 effect on cases be both delayed (this week's temperature can affect cases several weeks later, not
@@ -509,21 +510,41 @@ re-verification on the current XGBoost-based pipeline found the opposite as a st
 footnote above): the holdout's preferred configuration also won the true backtest there. Checked
 further at the ensemble level, though, it lost on the same fold-1 tuning check that validated every
 other change reported here, so it was not adopted -- a reminder that a standalone-model result and
-an ensemble-level result can disagree even when both are individually rigorous. Together these
+an ensemble-level result can disagree even when both are individually rigorous. Fourth, we tested the ensemble combination
+rule itself: the inaugural 2024 sprint's organizers combine models by log-linear (logarithmic)
+pooling of parametric predictive distributions \citep{araujo2026,carvalho2023}, a genuinely
+different rule from our per-quantile-median Vincentization -- a precision-weighted combination of
+distributions rather than a per-quantile order statistic, which guarantees a unimodal result.
+Substituted for Vincentization (equal weights, then conformal-recalibrated identically to the
+deployed ensemble), it wins three of four folds outright, including fold 1, the only fold this
+project's discipline permits for tuning decisions (WIS 309 versus 337, an 8 percent improvement)
+and the ordinary-season metric (normalized WIS excluding 2024, 0.338 versus 0.375). By the letter
+of that discipline, this candidate passes and every previous one in this table failed. But it loses
+specifically on the 2024 outbreak fold (WIS 3630 versus 3297, a 10 percent regression, with 90 and
+95 percent coverage both falling further from nominal, 64/79 versus 70/83): precision-weighted
+pooling is sharper in ordinary seasons but narrows the combined tails exactly where the widest
+tails matter most. We did not adopt it. The fold-1 rule exists to prevent tuning the ensemble to
+the specific reporting folds it is judged on, not to license a change that measurably weakens
+performance on the one season the entire ensemble-plus-conformal design is built to protect
+against; a rule applied mechanically here would have recommended trading away the outbreak-season
+robustness that motivates this paper's central design choice. Together these
 results locate much of the predictable signal in this problem, caution against complexity that is
 not validated on the true forecasting task, and show that even a validation discipline's own
-conclusions can be implementation-specific rather than a fixed property of the problem.
+conclusions can be implementation-specific -- and occasionally require judgment beyond the rule
+itself -- rather than a fixed property of the problem.
 
 \begin{table}[t]
 \centering\small
-\caption{\textbf{Interventions that did not help, plus one that reversed on re-verification but
-still did not survive ensemble-level scrutiny (negative results throughout).} Each was evaluated on
+\caption{\textbf{Interventions that did not help, plus two that passed part of our validation
+discipline but still were not adopted (negative results throughout).} Each was evaluated on
 the same backtest as the main comparison. $^{\dagger}$Originally tested on the LightGBM
 configuration before it was superseded by XGBoost and before a later data refresh; re-verified on
 the current XGBoost-based pipeline and current data (see footnote in text). The hyperparameter
 row's standalone-model finding reversed on re-verification, but checking it at the ensemble level
 (the same fold-1 discipline that validated every adopted change) found it should not be adopted
-either -- none of these four rows changed the deployed model.}
+either. $^{\ddagger}$Passes the fold-1 tuning check outright but regresses specifically on the
+outbreak fold (see text); not adopted on substantive grounds despite passing the formal rule --
+none of these five rows changed the deployed model.}
 \label{tab:ablation}
 \begin{tabular}{@{}lll@{}}
 \toprule
@@ -537,6 +558,8 @@ Hyperparameter tuning$^{\dagger}$ & internal holdout $+5\%$, & internal holdout 
  (LightGBM, original) & backtest worse & full-season forecasting \\
 Hyperparameter tuning$^{\dagger}$ & standalone $-3.2\%$; & generalized alone, but not \\
  (XGBoost) & ensemble fold 1 worse & at ensemble level (see text) \\
+Log-linear pooling$^{\ddagger}$ & fold 1 $-8\%$; outbreak fold & sharper pooling narrows tails \\
+ (vs.\ Vincentization) & (fold 2) WIS $+10\%$ & exactly where width matters most \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -710,7 +733,18 @@ and per-unit relative WIS alongside it.
 Deep learning did not dominate, and simple methods, a climatological quantile model and a bootstrap
 of historical seasons, were hard to beat. This is consistent with forecasting-competition evidence
 that in small-sample, few-series regimes, parsimonious methods and combinations are strong
-\citep{makridakis2020}. Our negative results sharpen the point. The covariate that helped the
+\citep{makridakis2020}. The pattern recurs one sprint earlier: in IMDC24, a Bayesian baseline model
+using no climate covariates at all was among the most consistently competitive submissions across
+states and seasons \citep{araujo2026}, echoing our own finding that a covariate-free climatological
+baseline and a historical-trajectory bootstrap are hard to beat with more heavily engineered
+alternatives. The same predecessor sprint offers an independent caution about tuning ensembles on
+limited past data: its CRPS-weighted logarithmic-pooling ensemble, with weights fit to 2023--2024
+performance, badly overestimated the true 2025 outbreak in three of five states, because the
+models it weighted most heavily had performed well on those past seasons but poorly on the actual
+target season \citep{araujo2026} -- the same overfitting-to-past-folds failure mode our fold-1
+tuning discipline (Section~\ref{sec:negative}) exists to catch, now observed independently in
+another team's ensemble on a different edition of the same challenge. Our negative results sharpen
+the point. The covariate that helped the
 strongest 2024-sprint model, climate acting through a distributed-lag non-linear response
 (DLNM, Section~\ref{sec:negative} above) \citep{lowe2021,gasparrini2010}, did not help our gradient-boosted forecaster, because that
 structure requires the regularized, partially pooled Bayesian formulation in which it was developed,
@@ -739,8 +773,17 @@ covers two diseases in one country and is retrospective; we submitted the recali
 the challenge's forecast phase (the true 2026--27 season, EW41 2026 through EW40 2027) ahead of its
 2026-09-10 deadline, but a genuine prospective score awaits that season's resolution. The comparison
 is single-team, so it does not capture the full diversity
-of approaches a multi-team sprint would, and the conformal factors are calibrated on one season under
-the challenge's tuning-fold discipline rather than by a fully online procedure.
+of approaches a multi-team sprint would, though our 26-state, four-track design covers more
+geographic and epidemiological ground than the inaugural 2024 sprint, which evaluated five highly
+endemic states and explicitly left lower-incidence, more recently affected regions untested
+\citep{araujo2026}; the conformal factors are calibrated on one season under
+the challenge's tuning-fold discipline rather than by a fully online procedure. Finally, the
+2023--24 outlier season we treat as a pure epidemiological surge may also reflect a data-quality
+confound: the 2024 season saw a substantial expansion of Oropouche fever, whose symptoms overlap
+with dengue's, and the inaugural sprint's organizers flag possible dengue-notification
+contamination from Oropouche misclassification as a contributing factor to that season's models
+failing so widely \citep{araujo2026}, a possibility our own pipeline cannot rule out with
+notification data alone.
 
 \subsection{Future work}
 The immediate next step is scoring the submitted forecast phase once the 2026--27 season resolves,
@@ -954,6 +997,7 @@ Mosqlimate teams for curating and distributing the data.
 \begin{thebibliography}{99}
 \small
 \bibitem{araujo2026} Araujo EC, Carvalho LM, Coelho FC, et al. Leveraging probabilistic forecasts for dengue preparedness and control: the 2024 Dengue Forecasting Sprint in Brazil. \emph{Proc Natl Acad Sci USA} (2026).
+\bibitem{carvalho2023} Carvalho LM, Villela DAM, Coelho FC, Bastos LS. Bayesian inference for the weights in logarithmic pooling. \emph{Bayesian Anal} 18(1):223--251 (2023).
 \bibitem{bracher2021} Bracher J, Ray EL, Gneiting T, Reich NG. Evaluating epidemic forecasts in an interval format. \emph{PLoS Comput Biol} 17(2):e1008618 (2021).
 \bibitem{gneiting2007} Gneiting T, Raftery AE. Strictly proper scoring rules, prediction, and estimation. \emph{J Am Stat Assoc} 102(477):359--378 (2007).
 \bibitem{romano2019} Romano Y, Patterson E, Cand\`es EJ. Conformalized quantile regression. \emph{Adv Neural Inf Process Syst} 32 (2019).
