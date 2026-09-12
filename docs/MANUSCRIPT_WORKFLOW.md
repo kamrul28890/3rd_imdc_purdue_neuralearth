@@ -139,7 +139,51 @@ imperceptible and comparable to the main text's 1.76pt.
 - Gate: recompile the SI, zero em-dashes (`grep -c "—"` returns 0), zero pdflatex errors, and both
   overfull boxes above resolved or consciously accepted with a reason.
 
-## Step 6 — Figures and tables final polish
+## Step 6 — Figures and tables final polish — **MOSTLY DONE 2026-09-12** (one open decision)
+
+Method: rather than eyeball 17 images, the palette audit was done by extracting every hex constant
+and colormap from the figure scripts and checking whether the same model wears the same colour
+everywhere. That found both defects below mechanically; the images were then reviewed at full size
+to confirm.
+
+**Fixed:**
+1. **Red-green heatmap (accessibility).** `paper_state_heatmap.png` used `RdYlGn_r`, and the whole
+   reading of it is "is this cell better or worse than baseline", with the colourbar and two SI
+   passages stating the meaning as *colour alone* ("green = better, red = worse"). Red-green
+   diverging is unreadable for the roughly 8% of men with red-green CVD. Switched to `RdBu_r`,
+   which keeps red = worse, stays separable under every common CVD type and in greyscale, and is
+   in fact more legible here: the near-baseline cells now read as near-white instead of muddy pale
+   yellow-green. `vmin/vmax` were already symmetric, so the neutral midpoint correctly sits at
+   baseline parity. Both SI passages and the caption updated, and the caption now points to the
+   released `log_relative_wis_by_state.csv` as the numbers-not-colours fallback.
+2. **Same model, two colours.** `ensemble_conformal` was `#0b0b0b` (ink) in the tier-1 and
+   `make_figures.py` figures but `#1b6ca8` (blue) in `paper_conformal.png`. Aligned to ink, with
+   `ensemble_vincent` moved to the shared `MUTED` grey. This also separates the two series by
+   lightness rather than hue, so that figure now survives greyscale printing and CVD, which the
+   previous blue-against-grey pairing did not.
+
+**Checked and found acceptable, no change made:**
+- Entity colours are otherwise consistent across `make_figures.py` and `make_paper_tier1_figs.py`
+  (climatological blue, XGBoost red, GRU green, mechanistic purple, conformal ink, median grey).
+- The near-duplicate hues (`#1b6ca8` / `#2a78d6` / `#1b4f8a`; `#e34948` / `#c0392b`) are used for
+  *non-entity* roles (generic estimate markers, timeline elements, WIS-decomposition components),
+  so they do not create identity confusion. Not worth churning working figures.
+- `paper_stability.png` direct-labels every point in its own colour, so identity is never
+  colour-alone there.
+- `paper_wis_by_fold.png` carries 8 series on a legend with no direct labels, which puts the
+  XGBoost-red and GRU-green pair at CVD risk. Bar order is fixed and matches legend order, so
+  position is a genuine secondary encoding. Acceptable, but it is the weakest figure on this axis.
+
+**Open decision, needs the user (not fixed unilaterally because it changes a main-text figure the
+Results text describes):** `paper_conformal.png` panel A plots mean WIS per season for the
+Vincentization and conformal ensembles on a log axis spanning roughly 300 to 3600. Its stated
+message is that "the gain concentrates in the 2024 outlier season at a small cost in ordinary
+seasons", but at that scale an 8% change (3574 to 3297) is invisible: all four bar pairs read as
+equal height, so the panel does not show what its caption claims. The encoding, not the data, is
+the problem. Proposed fix: replace panel A with the per-season *change* (conformal minus
+Vincentization, or percent change), which puts the gain and the small ordinary-season cost on an
+axis where both are visible, and states the claim directly rather than asking the reader to
+compare two near-identical logs.
 - Re-open every figure referenced in the main text and SI (not yet done in the audit — see
   `MANUSCRIPT_GAP_AUDIT.md` §9) and check: colorblind-safe palette, consistent styling across all
   ~13+ figures (same font, same color mapping for the same model across figures), captions
@@ -187,6 +231,12 @@ imperceptible and comparable to the main text's 1.76pt.
   document's writing.
 
 ## Step 11 — Submission packaging
+- **Figure resolution is below every journal floor and must be raised here.** Surveyed 2026-09-12:
+  `make_figures.py` and `make_pipeline_fig.py` write at `dpi=150`, `make_paper_tier1_figs.py` and
+  `make_paper_extra_figs.py` at `dpi=160`, and the conformal, heatmap, and PIT figures at
+  `dpi=200`. Journals in this space typically require 300 or more for raster figures (PLOS asks
+  300-600 for TIFF). Set one shared constant and regenerate everything once the venue's exact
+  requirement is known, rather than guessing a target now.
 - Prepare the post-acceptance formatting package early (figures as separate files, SI as a
   separate PDF, cover letter, any reviewer suggestions) even though PLOS's initial submission is
   format-free, so this isn't a scramble after a provisional accept.

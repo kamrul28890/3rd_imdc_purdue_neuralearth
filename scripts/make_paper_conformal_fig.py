@@ -14,7 +14,13 @@ from imdc.config import FIGURES_DIR
 
 LEVELS = [50, 80, 90, 95]
 FOLDS = {1: "2022-23", 2: "2023-24\n(2024 outlier)", 3: "2024-25", 4: "2025-26\n(partial)"}
-C_VINC, C_CONF = "#8c8c8c", "#1b6ca8"
+# Entity colours must match make_paper_tier1_figs.py's COL map, or the same model wears two
+# different colours across the paper's figures. ensemble_conformal is INK there, so it is INK here.
+# ensemble_vincent has no entity colour assigned, and MUTED is apt for it: this figure's job is
+# before/after, so the superseded version should read as recessive. INK against MUTED also
+# separates by lightness, which survives greyscale printing and every common CVD type, where the
+# previous blue-against-grey pairing did not.
+C_VINC, C_CONF = "#898781", "#0b0b0b"
 
 df = pd.read_csv("results/metrics/final_scored.csv", low_memory=False)
 for c in ["wis", "fold_id"] + [f"coverage_{L}" for L in LEVELS]:

@@ -358,7 +358,7 @@ Table-based per-state comparisons do not scale to six models across 26 states. F
 same comparison as a heatmap: each cell is one model's mean log relative WIS against the
 seasonal-naive baseline in one state, averaged over the four seasons, the same quantity underlying
 the stability figure in the main text (Fig 3) but broken out by state instead of collapsed to a
-mean and standard deviation. Green cells are better than the baseline and red cells are worse. Two
+mean and standard deviation. Blue cells are better than the baseline and red cells are worse. Two
 patterns are visible beyond the aggregate numbers already reported: the deep network's advantage is
 concentrated in a subset of states (Ceara and Roraima most strongly) rather than uniform, and
 the gradient-boosted model (XGBoost) is the only one of the six with states that are red, meaning
@@ -370,8 +370,12 @@ Table 1 does not show.
 \begin{figure}[t]\centering
 \includegraphics[width=\textwidth]{../results/figures/paper_state_heatmap.png}
 \caption{\textbf{S6 Fig. Per-state skill relative to the seasonal-naive baseline.} Mean log
-relative WIS by model and state, averaged over the four seasons. Green is better than baseline, red
-is worse.}
+relative WIS by model and state, averaged over the four seasons. Blue is better than baseline, red
+is worse, and the diverging scale is centred on baseline parity. A red-blue scale is used rather
+than red-green so that the comparison remains readable under red-green colour vision deficiency
+and in greyscale. The underlying values are released as
+\texttt{log\_relative\_wis\_by\_state.csv} for readers who need the numbers rather than the
+colours.}
 \end{figure}
 
 \section*{S9 Text. Calibration by percentile of the predictive distribution}

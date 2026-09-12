@@ -49,17 +49,22 @@ def main():
 
     fig, ax = plt.subplots(figsize=(12, 3.2))
     vmax = np.nanmax(np.abs(pivot.to_numpy()))
-    im = ax.imshow(pivot.to_numpy(), cmap="RdYlGn_r", vmin=-vmax, vmax=vmax, aspect="auto")
+    # RdBu_r, not RdYlGn_r: the entire reading of this figure is "is this cell better or worse
+    # than baseline", and red-green diverging maps are indistinguishable for the ~8% of men with
+    # red-green colour vision deficiency. Red-blue keeps the red=worse convention and stays
+    # separable under every common CVD type and in greyscale. vmin/vmax are symmetric so the
+    # neutral midpoint sits exactly at baseline parity (log relative WIS = 0).
+    im = ax.imshow(pivot.to_numpy(), cmap="RdBu_r", vmin=-vmax, vmax=vmax, aspect="auto")
     ax.set_xticks(range(len(pivot.columns)))
     ax.set_xticklabels(pivot.columns, fontsize=8)
     ax.set_yticks(range(len(pivot.index)))
     ax.set_yticklabels([LAB[m] for m in pivot.index], fontsize=9)
     cbar = fig.colorbar(im, ax=ax, fraction=0.025, pad=0.01)
-    cbar.set_label("Mean log(relative WIS vs. seasonal-naive)\n(green = better, red = worse)", fontsize=8)
+    cbar.set_label("Mean log(relative WIS vs. seasonal-naive)\n(blue = better, red = worse)", fontsize=8)
     ax.set_title("Per-state skill relative to the seasonal-naive baseline, averaged over four seasons",
                  loc="left", fontsize=11)
     plt.tight_layout()
-    plt.savefig(FIGURES_DIR / "paper_state_heatmap.png", dpi=150, bbox_inches="tight")
+    plt.savefig(FIGURES_DIR / "paper_state_heatmap.png", dpi=200, bbox_inches="tight")
     plt.close()
     print("Wrote paper_state_heatmap.png")
 
