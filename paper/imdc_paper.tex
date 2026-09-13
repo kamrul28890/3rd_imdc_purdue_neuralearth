@@ -42,9 +42,9 @@ Dengue Challenge (IMDC 2026), which requires weekly, state-level, full-interval 
 26 mandatory Brazilian states. All models are evaluated through a single backtesting harness over
 four official retrospective seasons, one of which contains the 2024 outbreak, and scored by the
 weighted interval score (WIS). We report four results with implications beyond this challenge.
-First, no model is best across seasons: a global recurrent network is most accurate in normal
-seasons yet worst on the 2024 outlier, while an ensemble never incurs any member's worst-season
-failure. Second, the best model depends on the evaluation metric: magnitude-weighted mean WIS and
+First, no model is best across seasons: global recurrent networks are the most accurate single
+models in normal seasons, yet the one we deployed is the worst of all on the 2024 outlier, while an
+ensemble never incurs any member's worst-season failure. Second, the best model depends on the evaluation metric: magnitude-weighted mean WIS and
 scale-free normalized WIS reward accuracy on different subsets of a highly skewed set of states.
 Third, a conformal recalibration, a post-hoc widening of the ensemble's intervals tuned to fix
 their overconfidence, improves accuracy and calibration at negligible cost (mean WIS, a
@@ -68,7 +68,7 @@ Which method to trust is an open question, especially in an exceptional season, 
 forecasts matter most. We compared five model families, from simple seasonal baselines to
 gradient boosting, deep learning, and a mechanistic epidemic model, using identical retrospective
 tests across four dengue seasons in all 26 mandatory Brazilian states. No method is best
-everywhere: the deep-learning model was most accurate in ordinary seasons but failed badly during
+everywhere: deep learning was the most accurate approach in ordinary seasons but failed badly during
 the 2024 outbreak, while a simple ensemble that averages the models was the most dependable. The
 apparent winner also changes depending on how performance is scored, a caution for forecasting
 leaderboards. Finally, a light statistical recalibration that stretched the ensemble's prediction
@@ -164,8 +164,8 @@ percent) are formed. All covariate access, feature construction, and model fitti
 data at or before each training cutoff, and this discipline is enforced by automated tests rather
 than by convention (Section~\ref{sec:methods}). The four seasons differ by an order of magnitude in
 difficulty. The 2023--24 season (fold 2), which contains the 2024 outbreak, is the hardest for every
-model, and the 2025--26 season (fold 4) is only partially resolved in the available data and is
-reported separately.
+model in Table~\ref{tab:byfold}, and the 2025--26 season (fold 4) is only partially resolved in the
+available data and is reported separately.
 
 \begin{figure}[t]
 \centering
@@ -182,9 +182,10 @@ are scored. Fold 2 covers the 2024 outbreak and fold 4 is partially resolved.}
 Table~\ref{tab:byfold} reports mean WIS by model and season, and Fig~\ref{fig:byfold} shows the same
 on a log scale. The ranking of models reorders across seasons. The deep network (a global GRU with a
 negative-binomial head, an output layer suited to over-dispersed count data such as case counts,
-rather than the Poisson head more common in count models) is the strongest model in the two
-ordinary seasons, folds 1 and 3 (WIS 348 and 324, the latter matched only by the pinball-trained
-GRU variant of Section~\ref{sec:extended} at 321), but is the worst of all models on the 2024
+rather than the Poisson head more common in count models) is the strongest single model in the two
+ordinary seasons, leading fold 1 outright at WIS 348 and placing second on fold 3 at 324, behind
+only its own pinball-trained variant at 321 (Section~\ref{sec:extended}); the three ensembles beat
+it on fold 1, which is the point of combining. It is nonetheless the worst of all models on the 2024
 outlier, fold 2 (WIS 4131), worse even than a naive baseline, because the surge lies outside its
 training distribution and its intervals, derived from its fitted distribution instead of built
 empirically, are too narrow to cover it. The gradient-boosted model (XGBoost, chosen over a second
@@ -231,9 +232,11 @@ Naive                     & 726 & 3833 & 1056 & \textbf{266} \\
 \centering
 \includegraphics[width=0.72\textwidth]{../results/figures/paper_wis_by_fold.png}
 \caption{\textbf{Mean WIS by model and season (log scale).} Model rankings reorder across seasons.
-The deep network is best in ordinary seasons and worst on the 2024 outlier; the ensemble avoids
-every model's worst-season failure. The conformal-recalibrated ensemble (Section~\ref{sec:conformal})
-is shown alongside its members.}
+The deep network is the best single model in ordinary seasons and the worst of all on the 2024
+outlier; the ensemble avoids every model's worst-season failure. The conformal-recalibrated
+ensemble (Section~\ref{sec:conformal}) is shown alongside its members. For legibility the figure
+plots the eight models of the deployed comparison; Table~\ref{tab:byfold} adds the two extended-set
+models of Section~\ref{sec:extended}.}
 \label{fig:byfold}
 \end{figure}
 
@@ -414,8 +417,8 @@ overtakes the conformal ensemble for the single best spot on this metric (0.371 
 while the gradient-boosted model (XGBoost) falls from second-best to fifth of six (0.434) and the
 mechanistic model falls from fourth to last (0.450) (Fig~\ref{fig:relwis}). The reversal is real but
 milder for the gradient-boosted model than it was for the LightGBM configuration we tested first,
-which fell all the way to the single weakest of the serious models under this metric (0.549, still
-its value in Table~\ref{tab:leaderboard} since LightGBM itself was not adopted): XGBoost's more
+which fell all the way to the weakest non-baseline model in Table~\ref{tab:leaderboard} under this
+metric (0.549, still its value there since LightGBM itself was not adopted): XGBoost's more
 balanced profile across seasons (Section~\ref{sec:noseason}) narrows, but does not eliminate, the
 metric-dependent reordering that motivates reporting both metrics. The
 disagreement is not a paradox. Consider two toy states, one with 10{,}000 weekly cases and one
@@ -515,7 +518,7 @@ The five families above are the ones the deployed pipeline uses. We built and sc
 partly on our own initiative and partly by reimplementing techniques described by other teams in
 this challenge and its 2024 predecessor. S5 Table reports all of them on the identical backtest;
 four warrant discussion here because their outcomes locate where the predictable signal in this
-problem is, and is not.
+problem is, and is not. Section~\ref{sec:why} draws the common thread through them.
 
 The \textbf{surge template} is the strongest single model we built by mean WIS (1168, against 1190
 for XGBoost). It carries no covariates at all. It circularly shifts each historical season to align
@@ -892,9 +895,9 @@ incurs is close to a design decision.
 
 Models that build intervals by resampling whole historical seasons, the semi-mechanistic bootstrap
 and the surge template, produce width that scales with historical variability. They pay dispersion
-continuously and are rarely caught out: the surge template is third of 19 on the 2024 outlier
-(3118) and the mechanistic model eighth (3371), while neither is competitive in ordinary seasons,
-where that width is simply a cost. Models that
+continuously and are rarely caught out: on the 2024 outlier the surge template ranks third and the
+mechanistic model eighth of the twenty models for which we have per-season scores (3118 and 3371),
+while neither is competitive in ordinary seasons, where that width is simply a cost. Models that
 derive intervals from a fitted parametric distribution, principally the two deep networks, pay
 almost no dispersion and are sharp when the season is ordinary, which is why the two of them hold
 the best ordinary-season normalized WIS of any single model, 0.366 for the pinball-trained variant
