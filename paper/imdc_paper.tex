@@ -113,8 +113,12 @@ fall within, rather than a weekly trajectory \citep{freitas2025}. A full-season 
 67 weeks ahead because a 15-week reporting gap separates the training cutoff from the first target
 week, is a different problem: no recent case data is available near the target, so the models that
 win at one month need not win here. Third, the inaugural sprint reported that no single model
-excelled across locations and years, but did not isolate why rankings move, nor test whether the
-choice of aggregate metric itself changes the winner \citep{araujo2026}.
+excelled across locations and years, and observed that its three scoring rules did not agree on a
+winner \citep{araujo2026}. The question we take up is a different one: not whether separate scoring
+rules disagree, which is expected of rules measuring different properties, but whether two
+aggregations of the \emph{same} proper scoring rule, one weighted by case magnitude and one
+scale-free, select different models. That disagreement cannot be attributed to the scores measuring
+different things, and it determines what a leaderboard reports.
 
 We address this with a controlled comparison built for reproducibility and for honest evaluation
 under distribution shift. Every model is fit and scored through one backtesting harness that
@@ -241,8 +245,13 @@ folds by their mean (overall skill against the baseline, negative is better) and
 (season-to-season consistency, lower is more stable). Fig~\ref{fig:stability} plots the two against
 each other. A log relative WIS of $-0.42$, for instance, means a model whose WIS is on average
 $e^{0.42}\approx1.5$ times smaller than the baseline's, i.e. about 1.5 times more accurate; a
-positive value of the same size would mean 1.5 times worse. The deep network has the best mean
-skill of any model on this scale ($-0.42$) but
+positive value of the same size would mean 1.5 times worse. One property of this metric constrains
+how its values should be read: because it is a fully-crossed pairwise comparison, each model's
+score depends on the set of models it is compared against, so the figures below apply to the six
+models in Fig~\ref{fig:stability} and shift if the comparison set changes. They are not directly
+comparable to a relative WIS computed elsewhere against a different set. Within this set, the deep
+network has the best mean
+skill ($-0.42$) but
 also the highest variability of any model except naive ($0.24$), the quantitative signature of its
 ordinary-season strength and outlier-season failure. The mechanistic model sits at the opposite
 corner: modest mean skill ($-0.09$) but the lowest variability of any model scored here ($0.04$;
@@ -475,7 +484,7 @@ tracks the diagonal at the outer intervals.}
 \subsection{Skill varies with horizon, and the outbreak failure is under-prediction}\label{sec:robustness}
 Because the 15-week reporting gap places every target 16 to 67 weeks ahead, we stratified skill by
 lead time on the ordinary seasons (Fig~\ref{fig:robustness}A). The deep network's advantage is
-horizon-dependent: it is the best model at short lead times (normalized WIS 0.255 at 16 to 27 weeks)
+horizon-dependent: it is the strongest of the four models stratified here at short lead times (normalized WIS 0.255 at 16 to 27 weeks, bettered only by its pinball-trained variant at 0.227, Section~ef{sec:extended})
 but degrades at the longest horizons (0.388 at 52 to 67 weeks), where both the conformal ensemble
 (0.338) and the gradient-boosted model (0.349) overtake it. The conformal ensemble is the most
 stable model across horizons and is never
@@ -514,12 +523,15 @@ its peak, averages those into one normalized template shape, and forecasts by dr
 offset and a log-normal gain against that template. Its advantage is entirely a property of the
 outbreak season, where it scores 3118, the best in Table~\ref{tab:byfold}, because
 resampling whole historical seasons produces intervals that widen when the target is unlike the
-recent past. The first-pass SARIMAX makes the same point more starkly: it records the best
-outbreak-season score of any model we built, 2979, while finishing 16th of 24 overall, because the wide
-intervals that serve it in 2024 are ruinous in the three ordinary seasons (fold 3 WIS 1464).
-Outbreak-season skill alone is not evidence of a good forecaster. The same width is dead weight in an ordinary season, where it over-covers badly
+recent past. The two first-pass classical models make the same point far more starkly. Prophet
+records the best outbreak-season score of any model we built, 2812, and SARIMAX the second best,
+2979, yet they finish last and 16th of 24 overall, because the very wide intervals that cover the
+2024 surge are ruinous in the ordinary seasons (fold 3 WIS 2636 and 1464 respectively).
+Outbreak-season skill alone is not evidence of a good forecaster, and the model that best covers
+the worst season in the record can still be the worst model in the study. The same width is dead weight in an ordinary season, where it over-covers badly
 (64 percent empirical coverage at the nominal 50 percent level) and pays for that in dispersion:
-its normalized WIS excluding 2024 is 0.447, among the worst in Table~\ref{tab:leaderboard}, and its
+its normalized WIS excluding 2024 is 0.447, eighth of the twelve models in
+Table~\ref{tab:leaderboard}, and its
 tuning-fold normalized WIS is 0.444 against the deployed ensemble's 0.306. A model can therefore
 lead the raw aggregate while failing the criterion used to select models, which is the
 metric-disagreement result of Section~\ref{sec:metric} arriving through an independent route.
@@ -534,13 +546,14 @@ every ensemble-level metric. Being a better model and being a better ensemble me
 properties, and the second depends on error correlation with the other members rather than on
 accuracy alone.
 
-The \textbf{classical statistical family} deserves explicit mention because the predecessor sprint's
-Prophet and SARIMAX entries were among its strongest \citep{araujo2026}. Ours were not. A first
+The \textbf{classical statistical family} deserves explicit mention because a Prophet model and a
+SARIMAX model from another team were named among the best-performing dengue state-level entries at
+this edition's validation round \citep{imdc2026webinar}. Ours were not. A first
 Prophet pass scored 2177 and a first SARIMAX pass 1419, both worse than seasonal-naive. Rebuilding
 each against the specific gaps we could identify, flat growth, real climate and ocean-index
 regressors, and a seasonally stratified residual bootstrap for Prophet, improved it to 1520, a 30
 percent reduction that still left it well short. For SARIMAX, the order selected on one fold did
-not transfer to another regime (1752 when frozen, 1529 with a per-fold search), which is the same
+not transfer to another regime (1752 when frozen, 1528 with a per-fold search), which is the same
 tuning-transfer failure documented in Section~\ref{sec:negative}. We report these as negative
 results rather than omitting them: at a 16 to 67 week horizon with no recent case data near the
 target, the autoregressive structure both families rely on has little left to condition on.
@@ -761,7 +774,7 @@ percent of its own peak (onset), the timing and log-magnitude error at the true 
 Section~\ref{sec:noseason}), and the log-ratio of predicted to observed total season cases
 (Table~\ref{tab:operational}). No model wins on every one of these summaries, which is the same
 qualitative pattern as the main WIS results but on a different, more directly interpretable set of
-outputs. The gradient-boosted model (XGBoost) has the lowest onset-timing error (3.7 weeks mean
+outputs. Among the models in Table~ef{tab:operational}, the gradient-boosted model (XGBoost) has the lowest onset-timing error (3.7 weeks mean
 absolute
 error, against 3.8 for the conformal ensemble), the climatological model has the lowest peak-timing
 error (4.5 weeks, against 4.9 for the ensemble), and the gradient-boosted model again gives the
@@ -879,11 +892,13 @@ incurs is close to a design decision.
 
 Models that build intervals by resampling whole historical seasons, the semi-mechanistic bootstrap
 and the surge template, produce width that scales with historical variability. They pay dispersion
-continuously and are rarely caught out: both are among the best on the 2024 outlier (3371 and 3118)
-and neither is competitive in ordinary seasons, where that width is simply a cost. Models that
+continuously and are rarely caught out: the surge template is third of 19 on the 2024 outlier
+(3118) and the mechanistic model eighth (3371), while neither is competitive in ordinary seasons,
+where that width is simply a cost. Models that
 derive intervals from a fitted parametric distribution, principally the two deep networks, pay
-almost no dispersion and are sharp when the season is ordinary, which is why the deep network has
-the best ordinary-season skill of any single model. The same sharpness is catastrophic when the
+almost no dispersion and are sharp when the season is ordinary, which is why the two of them hold
+the best ordinary-season normalized WIS of any single model, 0.366 for the pinball-trained variant
+and 0.385 for the deployed one. The same sharpness is catastrophic when the
 observation lands far outside: the negative-binomial GRU covers 27 percent of observations at its
 nominal 50 percent level and records the worst outlier-season score of any model, worse than a naive
 baseline. This is a trade-off, not a ranking, and it explains why a single leaderboard position is a
