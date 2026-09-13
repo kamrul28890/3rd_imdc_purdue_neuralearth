@@ -527,6 +527,42 @@ unchanged. Reported as a full ablation-table row plus a Discussion paragraph in 
 rule - is itself the informative part, matching how this project already reports contradictory
 findings rather than picking the number that looks best.
 
+## 6e. Extended model set folded into the paper (2026-09-13)
+
+Sec 6c recorded the intent that `surge_template` and `gru_wis` "are kept and reported standalone in
+the paper's model-comparison table." That was never executed: the paper reported only the five
+deployed families, and nine scored models were absent entirely. On the user's instruction that the
+whole body of work should be reflected, this is now done.
+
+- **Main Table 1 and Table 2** gained `surge_template` and `gru_wis`, the two competitive omissions.
+- **New SI S5 Table** is a complete inventory of all **24 models and variants** ever evaluated on the
+  dengue state backtest, including the four deleted ones (random forest, two Holt-Winters variants,
+  Chronos) reported from the runs that produced the decision to drop them, with a one-line outcome
+  for each.
+- **New Results Sec 2.8** (`sec:extended`) covers the nine additional models and what their failures
+  identify.
+- **New Discussion subsection** (`sec:why`) explains the mechanism: performance tracked how a model
+  builds intervals more closely than it tracked model class. Season-resampling methods (mechanistic,
+  surge template) pay dispersion continuously and win the outbreak; parametric-interval methods (both
+  GRUs) pay almost none and win ordinary seasons but fail catastrophically on the outlier.
+
+**Three claim corrections this forced, all in the paper's favour once stated honestly:**
+1. XGBoost was called "the best single model." `surge_template` beats it (1168 vs 1190).
+2. XGBoost was called "the strongest single model on the outlier season" (3238). Both
+   `surge_template` (3118) and first-pass SARIMAX (2979) beat it.
+3. Most consequential: the conformal ensemble's lead over the best single model is **6 WIS units,
+   not 28**, and a paired bootstrap puts it at -5.9 [-37.4, 26.2], i.e. **not significant**. The
+   paper now says so, and makes the narrower claim it can support: restricted to the three ordinary
+   seasons the ensemble beats `surge_template` by 73.9 [54.5, 91.7], it is never worst in any
+   season, and it is the only model near the top that also passes the fold-1 tuning check
+   (0.306 vs `surge_template`'s 0.444).
+
+**Tested and deliberately not claimed:** whether interval width predicts which regime a model wins.
+Spearman correlation between coverage-at-50 and the fold-2/fold-3 WIS ratio across 19 models is
+rho = -0.335, p = 0.16, the right direction but not significant, and confounded by models that are
+simply bad in both folds. The Discussion explains the mechanism through the WIS decomposition, which
+is an identity, instead of asserting a correlation that does not hold.
+
 ## 7. Suggested calendar
 
 - **Now → ~Jul 25:** engineering hardening (Workstream C) + start ECMWF features; prep the Jul 31 webinar.

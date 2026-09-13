@@ -37,7 +37,7 @@ Dengue is expanding across Brazil; 2024 produced a record epidemic roughly four 
 year. Accurate, calibrated probabilistic forecasts support preparedness, but which of statistical,
 machine-learning, deep-learning, and mechanistic approaches forecasts best, especially under an
 outbreak year's distribution shift, is unsettled. We report a reproducible, leakage-controlled
-comparison of five probabilistic forecasting model families for the 3rd Infodengue--Mosqlimate
+comparison of five probabilistic forecasting model families, 24 models and variants in total, for the 3rd Infodengue--Mosqlimate
 Dengue Challenge (IMDC 2026), which requires weekly, state-level, full-interval forecasts for the
 26 mandatory Brazilian states. All models are evaluated through a single backtesting harness over
 four official retrospective seasons, one of which contains the 2024 outbreak, and scored by the
@@ -178,18 +178,22 @@ are scored. Fold 2 covers the 2024 outbreak and fold 4 is partially resolved.}
 Table~\ref{tab:byfold} reports mean WIS by model and season, and Fig~\ref{fig:byfold} shows the same
 on a log scale. The ranking of models reorders across seasons. The deep network (a global GRU with a
 negative-binomial head, an output layer suited to over-dispersed count data such as case counts,
-rather than the Poisson head more common in count models) is the single best model in the two
-ordinary seasons, folds 1 and 3 (WIS 348 and 324), but is the worst of all models on the 2024
+rather than the Poisson head more common in count models) is the strongest model in the two
+ordinary seasons, folds 1 and 3 (WIS 348 and 324, the latter matched only by the pinball-trained
+GRU variant of Section~\ref{sec:extended} at 321), but is the worst of all models on the 2024
 outlier, fold 2 (WIS 4131), worse even than a naive baseline, because the surge lies outside its
 training distribution and its intervals, derived from its fitted distribution instead of built
 empirically, are too narrow to cover it. The gradient-boosted model (XGBoost, chosen over a second
 gradient-boosting implementation, LightGBM, that we also tested and that scored significantly worse
-overall, Section~\ref{sec:methods}) is the strongest single model on the outlier season (WIS 3238),
-but unlike LightGBM, which showed a sharper trade-off (strongest on the outlier at WIS 3332 yet the
-weakest of the serious models on the ordinary season fold 3, WIS 665), XGBoost remains reasonably
-competitive rather than collapsing in the ordinary seasons (WIS 376 and 484 in folds 1 and 3). The
-semi-mechanistic trajectory model is near best on the outlier (WIS 3371)
-because its bootstrap of historical seasons yields wide intervals precisely when they are needed.
+overall, Section~\ref{sec:methods}) is the strongest of the three deployed families on the outlier
+season (WIS 3238), and unlike LightGBM, which showed a sharper trade-off (strongest of the two on
+the outlier at WIS 3332 yet the weakest of the serious models on the ordinary season fold 3, WIS
+665), XGBoost remains reasonably competitive instead of collapsing in the ordinary seasons (WIS 376
+and 484 in folds 1 and 3). Two models outside the deployed ensemble handle the outlier season better
+still: the surge template at WIS 3118 and the semi-mechanistic trajectory model at 3371, both for
+the same reason, which is that each builds its intervals by resampling whole historical seasons and
+so widens them precisely when the target departs from the recent past
+(Section~\ref{sec:extended}).
 This season-dependence is the central obstacle the challenge poses: a model selected on average
 performance carries a hidden risk of catastrophic failure in the season that matters most.
 
@@ -206,11 +210,13 @@ resolved and reported separately. Best value in each column is in bold.}
 \midrule
 Ensemble (conformal)      & 337 & 3297 & 403 & 408 \\
 Ensemble (Vincentization) & 338 & 3574 & 398 & 399 \\
-Ensemble (inverse-WIS)    & \textbf{313} & 3625 & \textbf{387} & 401 \\
-GRU (deep learning)       & 348 & 4131 & \textbf{324} & 542 \\
-XGBoost                   & 376 & \textbf{3238} & 484 & 468 \\
-Mechanistic               & 468 & 3371 & 551 & 314 \\
+Ensemble (inverse-WIS)    & \textbf{313} & 3625 & 387 & 401 \\
+GRU (negative-binomial)   & 348 & 4131 & 324 & 542 \\
+GRU (pinball-trained)     & 361 & 3736 & \textbf{321} & 455 \\
+XGBoost                   & 376 & 3238 & 484 & 468 \\
 Climatological            & 386 & 3588 & 516 & 309 \\
+Mechanistic               & 468 & 3371 & 551 & 314 \\
+Surge template            & 489 & \textbf{3118} & 511 & 329 \\
 Seasonal-naive            & 500 & 3848 & 581 & 293 \\
 Naive                     & 726 & 3833 & 1056 & \textbf{266} \\
 \bottomrule
@@ -283,13 +289,16 @@ estimated factors are gentle and concentrate on the tails: 1.08, 1.04, 1.19, and
 80, 90, and 95 percent intervals. Concretely, a raw 95 percent interval of, say, [40, 160] around a
 median of 100 becomes approximately [$-12$, 212], clipped to [0, 212] for non-negativity, after the
 1.86 factor: the median is never touched, only the interval stretches, and it stretches only where
-it needs to (the 80 percent interval above needed only a negligible correction). This step is what
-turns the ensemble into the single best model overall, not merely a hedge against any one member's
-worst case: the recalibrated ensemble is the most accurate model overall
-(mean WIS 1162 versus 1234 for the plain ensemble and versus 1190 for the best single model,
-XGBoost; normalized WIS 0.561 versus 0.595) and better
+it needs to (the 80 percent interval above needed only a negligible correction). This step lifts the
+ensemble to the top of the table rather than leaving it a hedge against any one member's worst
+case: the recalibrated ensemble has the lowest mean WIS of any model we evaluated
+(1162, against 1234 for the plain ensemble and 1190 for the best of the three deployed families,
+XGBoost; normalized WIS 0.561 versus 0.595) and is better
 calibrated at the tails (empirical coverage 46/74/87/94 versus 43/72/82/86), as shown in
-Fig~\ref{fig:conformal}. Out of sample, on the three seasons not used for calibration, the reduction
+Fig~\ref{fig:conformal}. That lead is narrow at the top: the surge template
+(Section~\ref{sec:extended}) reaches 1168, and the 6-unit gap between them is not statistically
+significant (Section~\ref{sec:significance}). What separates them is where each earns its score,
+and we return to this in Section~\ref{sec:extended}. Out of sample, on the three seasons not used for calibration, the reduction
 is 6.2 percent. The gain is concentrated in the outbreak season (fold 2 WIS 3574 to 3297) at a small
 cost in ordinary seasons, so the recalibration behaves as asymmetric insurance: it widens the outer
 tails just enough to blunt catastrophic under-prediction in an extreme year while barely affecting
@@ -301,7 +310,9 @@ because the per-quantile median across members otherwise dilutes a single member
 \caption{\textbf{Overall dengue backtest.} Averaged over four seasons and 26 states. Mean WIS is
 magnitude-weighted; normalized WIS (sum of WIS divided by sum of cases) is the challenge's headline
 metric and is reported for all folds and excluding the 2024 outlier. Coverage nearer the nominal
-50/80/90/95 is better. Best value in each column is in bold.}
+50/80/90/95 is better. Best value in each column is in bold. The surge template and the
+pinball-trained GRU come from the extended set of Section~\ref{sec:extended}; S5 Table lists all
+24 models and variants evaluated, including those not retained.}
 \label{tab:leaderboard}
 \begin{tabular}{@{}lrrrcccc@{}}
 \toprule
@@ -310,14 +321,16 @@ metric and is reported for all folds and excluding the 2024 outlier. Coverage ne
  & & \textbf{all} & \textbf{ex-2024} & 50 & 80 & 90 & 95 \\
 \midrule
 Ensemble (conformal)      & \textbf{1162} & \textbf{0.561} & 0.375 & 46 & 74 & 87 & 94 \\
+Surge template            & 1168 & 0.564 & 0.447 & 64 & 88 & 93 & 96 \\
 XGBoost                   & 1190 & 0.575 & 0.434 & 48 & 79 & 88 & 92 \\
 Ensemble (Vincentization) & 1234 & 0.595 & 0.371 & 43 & 72 & 82 & 86 \\
 Ensemble (inverse-WIS)    & 1238 & 0.598 & \textbf{0.358} & 44 & 74 & 84 & 89 \\
 Mechanistic               & 1238 & 0.598 & 0.450 & 55 & 80 & 86 & 90 \\
 Climatological            & 1264 & 0.610 & 0.407 & 48 & 74 & 83 & 86 \\
+GRU (pinball-trained)     & 1274 & 0.615 & 0.366 & 33 & 56 & 70 & 78 \\
 LightGBM                  & 1301 & 0.628 & 0.549 & 48 & 80 & 89 & 93 \\
 Seasonal-naive            & 1379 & 0.666 & 0.468 & 43 & 78 & 87 & 92 \\
-GRU (deep learning)       & 1394 & 0.673 & 0.385 & 27 & 50 & 60 & 67 \\
+GRU (negative-binomial)   & 1394 & 0.673 & 0.385 & 27 & 50 & 60 & 67 \\
 Naive                     & 1557 & 0.752 & 0.713 & 41 & 73 & 81 & 87 \\
 \bottomrule
 \end{tabular}
@@ -348,13 +361,24 @@ units, meaning they tend to do well or badly on the same state-seasons, so a pai
 looks at each model's difference from another on the very same units cancels that shared,
 season-driven variance instead of drowning in it (Fig~\ref{fig:significance}B).
 The conformal recalibration improves on the median ensemble by a mean 71.3 WIS (95 percent CI
-$[56.9, 87.8]$) and on the best single model, XGBoost, by 27.9 $([8.8, 47.3])$; on ordinary seasons
+$[56.9, 87.8]$) and on XGBoost by 27.9 $([8.8, 47.3])$; on ordinary seasons
 the deep network beats XGBoost by 48.9 $([14.9, 87.4])$; XGBoost itself beats the alternative
 gradient-boosted implementation we also tested, LightGBM, by 111.1 $([81.6, 143.0])$; and the
 conformal ensemble beats the naive
 baseline by 395.1 $([338.8, 457.3])$. All five intervals exclude zero. The lesson is methodological as much
 as substantive: in a record with one extreme season, marginal skill intervals are wide, but paired
 comparisons remain informative and are the sound basis for model selection.
+
+The same test also bounds what we can claim at the top of the table. Against the surge template,
+the best-scoring single model on mean WIS (Section~\ref{sec:extended}), the conformal ensemble's
+advantage over all four seasons is 5.9 WIS with a 95 percent interval of $[-26.2, 37.4]$, which
+includes zero: on raw mean WIS the two are statistically indistinguishable, because the outbreak
+season the surge template handles well dominates that average. Restricted to the three ordinary
+seasons, the ensemble beats it by 73.9 $([54.5, 91.7])$, an interval well clear of zero. We
+therefore do not claim the ensemble is significantly the most accurate model in raw aggregate. We
+claim something narrower and better supported: it is the most accurate in the seasons that recur,
+it is never the worst in any season, and it is the only model near the top of the table that also
+passes the tuning-fold check used to select it.
 
 \begin{figure}[t]
 \centering
@@ -476,6 +500,58 @@ ensemble by season (log scale); the 2024 season is dominated by under-prediction
 over-prediction.}
 \label{fig:robustness}
 \end{figure}
+
+\subsection{Nine further models, and what their failures identify}\label{sec:extended}
+The five families above are the ones the deployed pipeline uses. We built and scored nine more,
+partly on our own initiative and partly by reimplementing techniques described by other teams in
+this challenge and its 2024 predecessor. S5 Table reports all of them on the identical backtest;
+four warrant discussion here because their outcomes locate where the predictable signal in this
+problem is, and is not.
+
+The \textbf{surge template} is the strongest single model we built by mean WIS (1168, against 1190
+for XGBoost). It carries no covariates at all. It circularly shifts each historical season to align
+its peak, averages those into one normalized template shape, and forecasts by drawing a peak-week
+offset and a log-normal gain against that template. Its advantage is entirely a property of the
+outbreak season, where it scores 3118, the best in Table~\ref{tab:byfold}, because
+resampling whole historical seasons produces intervals that widen when the target is unlike the
+recent past. The first-pass SARIMAX makes the same point more starkly: it records the best
+outbreak-season score of any model we built, 2979, while finishing 16th of 24 overall, because the wide
+intervals that serve it in 2024 are ruinous in the three ordinary seasons (fold 3 WIS 1464).
+Outbreak-season skill alone is not evidence of a good forecaster. The same width is dead weight in an ordinary season, where it over-covers badly
+(64 percent empirical coverage at the nominal 50 percent level) and pays for that in dispersion:
+its normalized WIS excluding 2024 is 0.447, among the worst in Table~\ref{tab:leaderboard}, and its
+tuning-fold normalized WIS is 0.444 against the deployed ensemble's 0.306. A model can therefore
+lead the raw aggregate while failing the criterion used to select models, which is the
+metric-disagreement result of Section~\ref{sec:metric} arriving through an independent route.
+
+A \textbf{pinball-trained GRU}, identical in architecture to the deployed deep network but fitted
+to the quantile loss directly instead of through a negative-binomial likelihood, is significantly
+the better of the two as a standalone model (mean WIS 1274 versus 1394, paired difference 120.0,
+95 percent CI $[91.0, 150.5]$), has the best ordinary-season normalized WIS of any single model
+(0.366), and is still overconfident, though less so (33/56/70/78 against 27/50/60/67). It is
+nonetheless the worse ensemble member: substituted for the negative-binomial variant it loses on
+every ensemble-level metric. Being a better model and being a better ensemble member are different
+properties, and the second depends on error correlation with the other members rather than on
+accuracy alone.
+
+The \textbf{classical statistical family} deserves explicit mention because the predecessor sprint's
+Prophet and SARIMAX entries were among its strongest \citep{araujo2026}. Ours were not. A first
+Prophet pass scored 2177 and a first SARIMAX pass 1419, both worse than seasonal-naive. Rebuilding
+each against the specific gaps we could identify, flat growth, real climate and ocean-index
+regressors, and a seasonally stratified residual bootstrap for Prophet, improved it to 1520, a 30
+percent reduction that still left it well short. For SARIMAX, the order selected on one fold did
+not transfer to another regime (1752 when frozen, 1529 with a per-fold search), which is the same
+tuning-transfer failure documented in Section~\ref{sec:negative}. We report these as negative
+results rather than omitting them: at a 16 to 67 week horizon with no recent case data near the
+target, the autoregressive structure both families rely on has little left to condition on.
+
+Finally, \textbf{conditioning the surge template on climate} made it worse, not better (1406 versus
+1168, degrading on every metric). Centring the forecast season's gain distribution on a regression
+against the pre-cutoff temperature anomaly added noise without signal, because an eight-week
+anomaly reading is a weak proxy for the climate of a season more than a year ahead. This is the
+same conclusion as the covariate ablation in Section~\ref{sec:negative}, reached from the opposite
+direction: the climate information that helps here is the forward-looking seasonal forecast and the
+persistent ocean indices, not a recent local observation.
 
 \subsection{Added complexity did not improve forecasts}\label{sec:negative}
 Four interventions that plausibly should have helped did not (Table~\ref{tab:ablation}). First,
@@ -791,6 +867,44 @@ climate information in our pipeline is the seasonal forecast and large-scale osc
 observed local weather. This clarifies where future modeling effort should go: toward a Bayesian
 spatiotemporal member that can use climate through an exposure-lag-response surface, rather than
 toward more covariates in a boosted model.
+
+\subsection{What separated the models that worked from the ones that did not}\label{sec:why}
+Across the 24 models and variants we evaluated, spanning statistical, machine-learning, deep-learning, mechanistic, and
+template-based approaches, performance tracked one property more closely than model class: how each
+model generates its prediction intervals, and therefore how those intervals behave when the target
+season is unlike the training record. WIS decomposes exactly into a dispersion penalty, paid for
+interval width whether or not it is needed, and directional penalties, paid when the observation
+falls outside the interval (Section~\ref{sec:methods-scoring}). Which of those two costs a model
+incurs is close to a design decision.
+
+Models that build intervals by resampling whole historical seasons, the semi-mechanistic bootstrap
+and the surge template, produce width that scales with historical variability. They pay dispersion
+continuously and are rarely caught out: both are among the best on the 2024 outlier (3371 and 3118)
+and neither is competitive in ordinary seasons, where that width is simply a cost. Models that
+derive intervals from a fitted parametric distribution, principally the two deep networks, pay
+almost no dispersion and are sharp when the season is ordinary, which is why the deep network has
+the best ordinary-season skill of any single model. The same sharpness is catastrophic when the
+observation lands far outside: the negative-binomial GRU covers 27 percent of observations at its
+nominal 50 percent level and records the worst outlier-season score of any model, worse than a naive
+baseline. This is a trade-off, not a ranking, and it explains why a single leaderboard position is a
+poor summary of a forecasting model.
+
+Three further patterns are worth stating because each was learned from a failure. First, covariates
+helped only when they were forward-looking. Observed local climate, whether added to the boosted
+model (Section~\ref{sec:negative}) or used to condition the surge template's gain
+(Section~\ref{sec:extended}), degraded forecasts in both cases; the seasonal climate forecast and
+the persistent ocean indices, which carry information about the target window rather than the
+recent past, are retained in every deployed model. At a 16 to 67 week horizon this is close to a
+definitional point: a covariate observed before the cutoff has decayed to noise by the target week
+unless the quantity itself persists. Second, autoregressive structure has little to condition on at
+this horizon, which is the common thread linking the Prophet and SARIMAX results to the general
+weakness of recent-lag features. These families are strong at the one-to-three-month horizons where
+comparable studies deploy them \citep{wu2025,sesay2026} and weak here, so the appropriate conclusion
+is about horizon, not about the families. Third, every intervention that improved a model in
+isolation had to be re-checked in combination, and two of them reversed: the pinball-trained GRU is
+significantly better standalone yet a worse ensemble member, and the shallower boosted configuration
+won the standalone backtest yet lost at the ensemble level. Ensemble value is a function of error
+correlation, which standalone accuracy does not measure.
 
 \subsection{Conformal recalibration as transferable insurance}
 The conformal recalibration is simple, scale-free, and cheap, and it improves both accuracy and

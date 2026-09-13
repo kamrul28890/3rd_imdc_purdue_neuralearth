@@ -27,9 +27,10 @@ metric-dependent model rankings, regime-shift fragility, and conformal ensembles
 
 \noindent This document provides the scoring definitions (S1), full model configurations (S2), the
 conformal recalibration and ensemble-composition robustness analysis (S3), normalized WIS by season
-(S4), the EPIFORGE 2020 reporting checklist (S5), exploratory data analysis (S6), the
-reproducibility statement (S7), per-state model performance (S8), calibration by percentile of the
-predictive distribution (S9), and a glossary of the technical terms used in the main text (S10).
+(S4), a complete inventory of every model evaluated including those not retained (S5), the
+EPIFORGE 2020 reporting checklist (S6), exploratory data analysis (S7), the reproducibility
+statement (S8), per-state model performance (S9), calibration by percentile of the predictive
+distribution (S10), and a glossary of the technical terms used in the main text (S11).
 All numbers correspond to the committed backtest and are reproducible from the released pipeline.
 
 \section*{S1 Text. Scoring}
@@ -230,14 +231,65 @@ Naive                     & 0.659 & 0.773 & 0.806 & \textbf{0.540} \\
 \end{tabular}
 \end{table}
 
-\section*{S5 Text. EPIFORGE 2020 reporting checklist}
+\section*{S5 Table. Complete inventory of models evaluated}
+Table~\ref{tab:inventory} lists every model we built and scored for the dengue state-level target,
+including those that are not competitive and those we did not retain. All figures come from the
+identical four-season, 26-state backtest and the same scoring code. Models marked "not retained"
+were removed from the codebase after evaluation; their scores are reported here from the runs that
+produced that decision, so the record is complete even though the code is not.
+
+\begin{table}[p]
+\centering\footnotesize
+\caption{\textbf{S5 Table. Every model evaluated on the dengue state-level backtest.} nWIS is
+normalized WIS over all four seasons; nWIS-ord excludes the 2024 outlier. Lower is better
+throughout. The first block is the deployed pipeline, reported in the main text; the second is the
+extended set of Section 2.8; the third was evaluated and not retained.}
+\label{tab:inventory}
+\begin{tabular}{@{}lrrrp{0.42\textwidth}@{}}
+\toprule
+\textbf{Model} & \textbf{WIS} & \textbf{nWIS} & \textbf{nWIS-ord} & \textbf{Role and outcome} \\
+\midrule
+\multicolumn{5}{@{}l}{\emph{Deployed pipeline}} \\
+Ensemble (conformal) & 1162 & 0.561 & 0.375 & Submitted model. Best mean WIS; never worst in any season \\
+XGBoost & 1190 & 0.575 & 0.434 & Ensemble member; adopted over LightGBM \\
+Ensemble (Vincentization) & 1234 & 0.595 & 0.371 & Ensemble before recalibration \\
+Ensemble (inverse-WIS) & 1238 & 0.598 & 0.358 & Weighted alternative; no better than the median \\
+Mechanistic (trajectory) & 1238 & 0.598 & 0.450 & Reported standalone; excluded from the ensemble \\
+Climatological & 1264 & 0.610 & 0.407 & Ensemble member; covariate-free baseline \\
+LightGBM & 1301 & 0.628 & 0.549 & Superseded by XGBoost for dengue; retained for chikungunya \\
+Seasonal-naive & 1379 & 0.666 & 0.468 & Reference baseline for relative WIS \\
+GRU (negative-binomial) & 1394 & 0.673 & 0.385 & Ensemble member; best in ordinary seasons, worst on the outlier \\
+Naive & 1557 & 0.752 & 0.713 & Lower reference baseline \\
+\addlinespace
+\multicolumn{5}{@{}l}{\emph{Extended set (Section 2.8)}} \\
+Surge template & 1168 & 0.564 & 0.447 & Best single model by mean WIS; fails the tuning-fold check (0.444) \\
+Hierarchical climatological & 1232 & 0.595 & 0.401 & Macroregion pooling; beats its unpooled parent, hurts the ensemble \\
+Mechanistic (sub-sampled) & 1269 & 0.613 & 0.452 & Variant of the trajectory model; loses to it on all three metrics \\
+GRU (pinball-trained) & 1274 & 0.615 & 0.366 & Better standalone than the deployed GRU, worse as an ensemble member \\
+Climate-conditioned surge & 1406 & 0.679 & 0.677 & Surge template conditioned on temperature anomaly; a clean regression \\
+SARIMAX (first pass) & 1419 & 0.685 & 0.835 & Classical family; no exogenous inputs, Gaussian intervals back-transformed \\
+SARIMAX (per-fold order) & 1528 & 0.737 & 0.776 & Order search fixes most of the frozen-order gap on mean WIS \\
+SARIMAX (frozen order) & 1752 & 0.846 & 1.078 & Order chosen on one fold does not transfer across regimes \\
+Prophet (rebuilt) & 1520 & 0.734 & 0.648 & Flat growth, real regressors, residual bootstrap; 30\% better than v1 \\
+Prophet (first pass) & 2177 & 1.051 & 1.916 & Default trend and Gaussian intervals unsuited to this horizon \\
+\addlinespace
+\multicolumn{5}{@{}l}{\emph{Evaluated, not retained}} \\
+Random forest (quantile) & 1303 & 0.629 & 0.491 & Bagging lost to boosting on every metric; no diagnostic value kept \\
+Holt-Winters (no trend) & 1525 & --- & 1.19 & Interval width grows without bound at long horizons \\
+Chronos (zero-shot) & 1467 & --- & --- & Pretrained foundation model; panel too small and autocorrelated \\
+Holt-Winters (damped) & 1969 & --- & 1.94 & As above, worse; both beaten by the naive baseline \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section*{S6 Text. EPIFORGE 2020 reporting checklist}
 This manuscript follows the EPIFORGE 2020 reporting guidelines for epidemic forecasting and
 prediction research (Pollett et al.\ 2021). Table~\ref{tab:epiforge} maps all 19 recommended items,
 in the guideline's own numbering and wording, to their location in the main text and this document.
 Locations are given by section name rather than section number, so that they remain correct if the
 main text is reordered. Two items warrant a note. Item 16 concerns version-stamping results
 published as a data object: we release no standalone data object, but the provenance manifest
-described in S7 Text serves the same purpose, recording the exact data checksums and code revision
+described in S8 Text serves the same purpose, recording the exact data checksums and code revision
 behind every reported number. Items 18 and 19 are conditioned on applicability to a specific
 epidemic; both apply here, and are addressed for the 2024 Brazilian dengue season specifically.
 
@@ -266,7 +318,7 @@ submitted 2026--27 forecast is prospective and not yet scored) \\
 5 & Explicitly describe the origin of input source data, with references. &
 Methods, Data and targets; S2 Text \\
 6 & Provide source data with publication, or document reasons as to why this was not possible. &
-Data and code availability; S7 Text \\
+Data and code availability; S8 Text \\
 7 & Describe input data processing procedures in detail. &
 Methods, Data and targets; S2 Text (feature list) \\
 \addlinespace
@@ -274,7 +326,7 @@ Methods, Data and targets; S2 Text (feature list) \\
 8 & State and describe the model type, and document model assumptions, including references. &
 Methods, Models; S2 Text; S1 Table \\
 9 & Make the model code available, or document the reasons why this is not possible. &
-Data and code availability; S7 Text \\
+Data and code availability; S8 Text \\
 \addlinespace
 \multicolumn{3}{@{}l}{\emph{Model evaluation}} \\
 10 & Describe the model validation, and justify the approach. &
@@ -295,7 +347,7 @@ Conformal recalibration; S1 and S3 Text \\
 of forecast uncertainty. &
 Author summary \\
 16 & If results are published as a data object, encourage a time-stamped version number. &
-S7 Text (provenance manifest; see the note above) \\
+S8 Text (provenance manifest; see the note above) \\
 17 & Describe the weaknesses of the forecast, including weaknesses specific to data quality and
 methods. &
 Discussion, Limitations \\
@@ -310,7 +362,7 @@ Discussion, Limitations (two diseases, one country, 26 states spanning the full 
 \end{tabular}
 \end{table}
 
-\section*{S6 Figs. Exploratory data analysis}
+\section*{S7 Figs. Exploratory data analysis}
 The following figures summarize the data that motivated the modeling choices. S1 Fig shows the
 per-state seasonal climatology of dengue incidence. S2 Fig shows the lagged cross-correlation between
 climate variables and incidence. S3 Fig shows incidence stratified by K\"oppen climate zone. S4 Fig
@@ -342,7 +394,7 @@ epidemic peak weeks across states and seasons.
 \caption{\textbf{S5 Fig. Distribution of epidemic peak weeks across states and seasons.}}
 \end{figure}
 
-\section*{S7 Text. Reproducibility and provenance}
+\section*{S8 Text. Reproducibility and provenance}
 The complete pipeline is released as an installable package with a single command to reproduce every
 result. Leakage safety, scoring correctness, model persistence, and every model family are covered by
 an automated test suite that runs in continuous integration. All model fitting is deterministic under a
@@ -353,7 +405,7 @@ reported number, and the per-state scored predictions for all models are release
 figure can be regenerated. Validated submission files for the four official tracks (dengue and
 chikungunya, at state and city level) are included.
 
-\section*{S8 Text. Per-state model performance heatmap}
+\section*{S9 Text. Per-state model performance heatmap}
 Table-based per-state comparisons do not scale to six models across 26 states. Fig~S6 gives the
 same comparison as a heatmap: each cell is one model's mean log relative WIS against the
 seasonal-naive baseline in one state, averaged over the four seasons, the same quantity underlying
@@ -378,7 +430,7 @@ and in grayscale. The underlying values are released as
 colors.}
 \end{figure}
 
-\section*{S9 Text. Calibration by percentile of the predictive distribution}
+\section*{S10 Text. Calibration by percentile of the predictive distribution}
 The reliability curve in the main text (Fig 8, Calibration and its correction) summarizes
 calibration at four interval levels.
 Fig~S7 shows where in the predictive distribution the miscalibration sits, using the probability
@@ -419,7 +471,7 @@ too wide, and a tilt indicates bias. The tallest bar in each panel is labeled, s
 vertical scale is set by the deep network's outlier. Computed on all four seasons and 26 states.}
 \end{figure}
 
-\section*{S10 Text. Glossary}
+\section*{S11 Text. Glossary}
 Terms used throughout the main text and this document, in order of first appearance.
 
 \begin{itemize}
