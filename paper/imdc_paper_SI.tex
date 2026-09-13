@@ -90,8 +90,8 @@ fractions; forecast horizon in weeks.
 \noindent\textbf{Hyperparameters (S1 Table).} Table~\ref{tab:hparams} lists the frozen configuration
 of each model. These were chosen a priori as conservative defaults. A separate search that preferred a
 deeper boosted configuration (num\_leaves 63, max\_depth 7) improved an internal time-block holdout by
-about 5 percent but worsened the true backtest, and was not adopted (main text
-the main text, negative results).
+about 5 percent but worsened the true backtest, and was not adopted (see the negative results in the
+main text).
 
 \begin{table}[t]
 \centering\small
@@ -371,11 +371,11 @@ Table 1 does not show.
 \includegraphics[width=\textwidth]{../results/figures/paper_state_heatmap.png}
 \caption{\textbf{S6 Fig. Per-state skill relative to the seasonal-naive baseline.} Mean log
 relative WIS by model and state, averaged over the four seasons. Blue is better than baseline, red
-is worse, and the diverging scale is centred on baseline parity. A red-blue scale is used rather
-than red-green so that the comparison remains readable under red-green colour vision deficiency
-and in greyscale. The underlying values are released as
+is worse, and the diverging scale is centered on baseline parity. A red-blue scale is used rather
+than red-green so that the comparison remains readable under red-green color vision deficiency
+and in grayscale. The underlying values are released as
 \texttt{log\_relative\_wis\_by\_state.csv} for readers who need the numbers rather than the
-colours.}
+colors.}
 \end{figure}
 
 \section*{S9 Text. Calibration by percentile of the predictive distribution}
@@ -385,7 +385,7 @@ Fig~S7 shows where in the predictive distribution the miscalibration sits, using
 integral transform (PIT): a calibrated forecast places the observation uniformly across its own
 distribution, so each of the ten bins cut by the nine submitted quantiles should hold its nominal
 share. Two implementation details matter for quantile-reported count data. The ten bins have
-unequal widths (25 percentage points at the centre, 2.5 at the tails), so raw counts would make
+unequal widths (25 percentage points at the center, 2.5 at the tails), so raw counts would make
 the central bins look over-full by construction; every panel therefore plots the ratio of observed
 to expected share, where 1.0 is calibrated at any bin width. Case counts are also discrete and
 often tie against their own predicted quantiles, so we use the non-randomized PIT for discrete
@@ -395,7 +395,7 @@ which is deterministic and reproducible, unlike the randomized alternative.
 Three features are visible that the four-level reliability curve cannot show. First, the deep
 network's overconfidence is symmetric and severe: both tail bins are over-full (3.5 and 9.6 times
 their nominal share) while the central half is at roughly half its share, the signature of
-intervals that are uniformly too narrow rather than merely mis-centred. Second, every model,
+intervals that are uniformly too narrow rather than merely mis-centered. Second, every model,
 including the well-calibrated gradient-boosted one, carries an excess in the topmost bin. That
 excess is the same under-prediction the WIS decomposition attributes to the 2024 season (main
 text, Fig 9B), seen here as a distributional rather than a seasonal statement: the observation
@@ -415,7 +415,7 @@ bottom bin. Widening intervals downward cannot help a count that is already at i
 \caption{\textbf{S7 Fig. PIT calibration by model.} Ratio of observed to expected share in each of
 the ten bins cut by the nine submitted quantile levels, so 1.0 (dashed line) is calibrated at any
 bin width. A U shape indicates intervals that are too narrow, a central hump intervals that are
-too wide, and a tilt indicates bias. The tallest bar in each panel is labelled, since the shared
+too wide, and a tilt indicates bias. The tallest bar in each panel is labeled, since the shared
 vertical scale is set by the deep network's outlier. Computed on all four seasons and 26 states.}
 \end{figure}
 

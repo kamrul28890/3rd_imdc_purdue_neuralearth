@@ -240,7 +240,37 @@ to exclude the baseline explicitly rather than leave a claim that is literally f
 - Gate: a written list of every number checked and its source file, not just "looks fine" — matches
   this project's own established verification discipline (see `superpowers:verification-before-completion`).
 
-## Step 8 — Prose and style pass
+## Step 8 — Prose and style pass — **DONE 2026-09-12**
+
+Mechanical gates, both documents: zero em-dashes; zero `PAPER_PLAN.md` §0 cliche terms (the single
+"robustly" hit is substantive, "how robustly" meaning how robust the performance is, not the filler
+use the rule targets); zero doubled words; zero double-spaced sentence breaks; genuine filler words
+total seven across 25 pages (`actually` x4, `very` x2, `simply` x1).
+
+**Defects found and fixed:**
+1. **Spelling inconsistency I introduced myself.** The paper uses US spelling (`centered`,
+   `modeling`), and my step 4 and step 6 additions brought in `colour`, `centre`, `centred` x2,
+   `labelled`, and `greyscale`. All normalized to US, plus one pre-existing `(grey)` in a main-text
+   caption. Worth noting as a process lesson: new prose should inherit the document's existing
+   conventions, and a spelling-variant grep is the cheap way to catch it.
+2. **A garbled parenthetical in the SI**, pre-existing: "was not adopted (main text the main text,
+   negative results)", evidently a botched edit. Now "(see the negative results in the main text)".
+3. **Repetition clusters.** `rather than` appeared 33 times, with three inside five lines in Methods
+   and three inside ten lines in Results. Varied to `not`, `instead of`, and `instead` at the
+   tightest points; now 30, with no cluster tighter than six lines. The construction is legitimate,
+   so the goal was breaking up the clusters, not eliminating it.
+
+**Reviewed and left as-is:** the Methods subsections (pipeline overview, data and targets, backtest
+design, scoring, models, conformal recalibration, reproducibility) and all back matter read cleanly;
+8 sentences begin with "This", all with clear referents; the only multi-comma "run-on" hit is the
+enumeration of the nine quantile levels.
+
+**One statement that is not yet true:** the Author contributions section ends "All authors read and
+approved the final manuscript." That is standard boilerplate and must be true at submission, but
+Easha and Helal have not yet reviewed the current draft. Step 10 exists to make it true; do not
+submit until it is.
+
+### Original step definition (kept for reference)
 - Full read-through for grammar, flow, and the `PAPER_PLAN.md` §0 style rules (no em dashes, no
   AI-cliche vocabulary, declarative and quantitative sentences, active voice, past/present tense
   discipline).

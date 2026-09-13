@@ -181,7 +181,7 @@ negative-binomial head, an output layer suited to over-dispersed count data such
 rather than the Poisson head more common in count models) is the single best model in the two
 ordinary seasons, folds 1 and 3 (WIS 348 and 324), but is the worst of all models on the 2024
 outlier, fold 2 (WIS 4131), worse even than a naive baseline, because the surge lies outside its
-training distribution and its intervals, derived from its fitted distribution rather than built
+training distribution and its intervals, derived from its fitted distribution instead of built
 empirically, are too narrow to cover it. The gradient-boosted model (XGBoost, chosen over a second
 gradient-boosting implementation, LightGBM, that we also tested and that scored significantly worse
 overall, Section~\ref{sec:methods}) is the strongest single model on the outlier season (WIS 3238),
@@ -418,7 +418,7 @@ normalized WIS (right).}
 \caption{\textbf{Geographic structure of forecast skill.} Normalized WIS of the conformal ensemble by
 state (lower is better). Forecasting is hardest in the dense, high-incidence southeastern states and
 in the Federal District, and easiest in the low-incidence interior, which is why magnitude-weighted
-skill is dominated by a few states. Espírito Santo (grey) is excluded from the challenge.}
+skill is dominated by a few states. Espírito Santo (gray) is excluded from the challenge.}
 \label{fig:skillmap}
 \end{figure}
 
@@ -892,11 +892,11 @@ nine quantiles 0.025, 0.05, 0.10, 0.25, 0.50, 0.75, 0.90, 0.95, and 0.975.
 \subsection{Backtest design and leakage control}\label{sec:methods-backtest}
 The four official seasons are derived at runtime from the challenge's train and target flags. A
 confirmed 15-week gap separates each training cutoff from the start of its evaluation window,
-simulating reporting delay. Two leakage disciplines are enforced centrally in the harness rather than
-in individual models. All covariate access is filtered to dates at or before the training cutoff, and
+simulating reporting delay. Two leakage disciplines are enforced centrally in the harness, not in
+individual models. All covariate access is filtered to dates at or before the training cutoff, and
 lag and rolling features are computed from the continuous cutoff-filtered history rather than from the
-gapped target window. Both are checked by automated regression tests, so a leak would fail the test
-suite rather than silently inflate scores.
+gapped target window. Both are checked by automated regression tests, so a leak fails the test suite
+instead of silently inflating scores.
 
 \subsection{Scoring}\label{sec:methods-scoring}
 Forecasts are scored by the weighted interval score,
