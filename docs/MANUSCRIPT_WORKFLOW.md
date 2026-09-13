@@ -195,7 +195,37 @@ compare two near-identical logs.
 - Gate: visual review of each figure at full size (not the thumbnail scale of a compiled page);
   no automated gate here, this is a human/visual-judgment step.
 
-## Step 7 — Full numbers-consistency pass
+## Step 7 — Full numbers-consistency pass — **DONE 2026-09-12**
+
+Every number in the main text and SI was recomputed from the committed `results/metrics/*.csv`
+rather than spot-checked. **All of them matched**, which is the expected outcome given the
+September resync but is worth having established rather than assumed:
+
+| Group | Checked | Result |
+|---|---|---|
+| Table 1 leaderboard | 10 models x (WIS, nWIS all, nWIS ex-2024, 4 coverage levels) | exact |
+| Table 2 WIS by fold | 9 models x 4 folds | exact |
+| LightGBM fold figures cited in text (3332, 665) | 2 | exact |
+| Conformal factors | 1.08 / 1.04 / 1.19 / 1.86 | exact |
+| Abstract out-of-sample reduction | 6.2% on folds 2-4 | exact |
+| Chikungunya Tables 4 and 5 | 6 models x (WIS, 2 coverage) + 6 x 4 folds | exact |
+| Chikungunya state nWIS (0.62) and city nWIS (0.60, 0.87), city coverage (39%) | 4 | exact |
+| Operational metrics table | ensemble and XGBoost x 4 quantities | exact |
+| Horizon-stratified nWIS (0.255, 0.388, 0.338, 0.349) | 4 | exact |
+| Fold-2 WIS decomposition (2675 / 621 / 1) | 3 | exact |
+| Stability means and standard deviations | 6 | exact |
+| Bootstrap CI on conformal nWIS and 5 paired comparisons with CIs | 12 | exact |
+| PIT ratios added in step 4 | 6 | exact |
+
+**One imprecision found and fixed:** the stability paragraph called the mechanistic model's 0.04
+"the lowest variability of any model." The seasonal-naive baseline is 0.000, lower, but only
+because relative WIS is measured against it, so its variability is zero by construction. Reworded
+to exclude the baseline explicitly rather than leave a claim that is literally false.
+
+**Cross-reference recheck (from the accumulating list):** "Results Section~2.11", SI "Fig 8" and
+"Fig 9B" all re-verified as still correct after this session's edits.
+
+### Original step definition (kept for reference)
 - **Cross-reference recheck (accumulating list).** The SI is a separate document, so it cannot
   `\ref` into the main text and every main-text pointer in it is a hardcoded string. Verify each
   against the then-current numbering: SI S10 Text glossary cites "Results Section~2.11"; SI S9

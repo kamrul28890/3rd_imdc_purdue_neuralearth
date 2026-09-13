@@ -239,7 +239,9 @@ positive value of the same size would mean 1.5 times worse. The deep network has
 skill of any model on this scale ($-0.42$) but
 also the highest variability of any model except naive ($0.24$), the quantitative signature of its
 ordinary-season strength and outlier-season failure. The mechanistic model sits at the opposite
-corner: modest mean skill ($-0.09$) but the lowest variability of any model ($0.04$), because its
+corner: modest mean skill ($-0.09$) but the lowest variability of any model scored here ($0.04$;
+the seasonal-naive baseline is excluded from this comparison, since relative WIS is measured
+against it and its variability is zero by construction), because its
 bootstrap of historical seasons widens intervals in proportion to historical variability rather than
 assuming a fixed noise scale. Both ensembles trade part of the deep network's mean skill for
 markedly better consistency (std $0.15$ and $0.13$ for the median and conformal ensembles), which is
@@ -324,11 +326,12 @@ Naive                     & 1557 & 0.752 & 0.713 & 41 & 73 & 81 & 87 \\
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.92\textwidth]{../results/figures/paper_conformal.png}
-\caption{\textbf{Effect of conformal recalibration on the dengue ensemble.} (A) Mean WIS by season,
-Vincentization ensemble versus the conformal-recalibrated ensemble (log scale). The gain
-concentrates in the 2024 outlier season at a small cost in ordinary seasons. (B) Interval
-calibration: empirical versus nominal coverage. Recalibration moves the outer intervals (90, 95)
-toward the diagonal.}
+\caption{\textbf{Effect of conformal recalibration on the dengue ensemble.} (A) Change in mean WIS
+per season, conformal-recalibrated minus Vincentization ensemble, so negative means recalibration
+helps. The asymmetry is the point: a gain of 277 WIS units in the 2024 outlier season against
+costs of 5 and 9 units in the two ordinary seasons that follow it, roughly thirty to fifty times
+smaller. (B) Interval calibration: empirical versus nominal coverage. Recalibration moves the
+outer intervals (90, 95) toward the diagonal.}
 \label{fig:conformal}
 \end{figure}
 
