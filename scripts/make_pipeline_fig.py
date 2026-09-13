@@ -81,7 +81,7 @@ def main():
             fontsize=8.5, color=MUTED, style="italic")
 
     plt.tight_layout()
-    plt.savefig(FIGURES_DIR / "paper_pipeline.png", dpi=150, bbox_inches="tight")
+    plt.savefig(FIGURES_DIR / "paper_pipeline.png", dpi=300, bbox_inches="tight")
     plt.close()
     print("Wrote paper_pipeline.png")
 

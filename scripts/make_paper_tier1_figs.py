@@ -53,7 +53,7 @@ def significance_fig():
     axB.set_title("B  Paired comparisons (left of 0 favors first)", loc="left", fontsize=11, fontweight="bold")
     axB.spines[["top", "right"]].set_visible(False)
     fig.tight_layout()
-    fig.savefig(FIGURES_DIR / "paper_significance.png", dpi=160, bbox_inches="tight")
+    fig.savefig(FIGURES_DIR / "paper_significance.png", dpi=300, bbox_inches="tight")
     plt.close(fig)
     print("wrote paper_significance.png")
 
@@ -90,7 +90,7 @@ def robustness_fig():
     axB.set_title("B  WIS decomposition (conformal ensemble)", loc="left", fontsize=11, fontweight="bold")
     axB.legend(frameon=False, fontsize=8); axB.spines[["top", "right"]].set_visible(False)
     fig.tight_layout()
-    fig.savefig(FIGURES_DIR / "paper_robustness.png", dpi=160, bbox_inches="tight")
+    fig.savefig(FIGURES_DIR / "paper_robustness.png", dpi=300, bbox_inches="tight")
     plt.close(fig)
     print("wrote paper_robustness.png")
 

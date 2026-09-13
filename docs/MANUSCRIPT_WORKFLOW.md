@@ -278,7 +278,25 @@ submit until it is.
   final gate, not just the sections touched in earlier steps.
 - Gate: both greps return 0 hits across `paper/*.tex`.
 
-## Step 9 — Cover letter
+## Step 9 — Cover letter — **DRAFTED 2026-09-12** (`paper/cover_letter.md`)
+
+Written venue-neutral, since the venue is deliberately still open. It leads with the four
+generalizable findings rather than a description of the study, states the breadth-for-depth
+trade against recent multi-country evaluations, and carries the standard originality, competing
+interests, funding, ethics, and data-availability declarations. Every number in it was taken from
+the step 7 verification, not retyped from memory.
+
+Three slots marked `[[ ]]` need the venue decision before it can be sent:
+1. Editor name and journal name.
+2. The fit paragraph. The draft notes which emphasis suits which kind of venue: a
+   computational-methods journal wants the leakage-audited harness, test suite, and
+   reproducibility; an epidemiology or global-health journal wants the Ministry-of-Health
+   decision-support framing and the operational onset, peak, and burden metrics.
+3. Suggested reviewers, if the submission system asks. Left as an author decision, with the note
+   that candidates should be independent of the challenge organizers, who are cited throughout as
+   the source of both the data and the predecessor sprint.
+
+## Step 9b — Original step definition (kept for reference)
 - Draft a cover letter for PLOS Computational Biology highlighting the five-point contribution
   list already in the Introduction, why PLOS Comp Biol specifically (methods rigor +
   reproducibility fit, per `PAPER_PLAN.md` §2's own reasoning), and suggested/excluded reviewers if
@@ -291,12 +309,15 @@ submit until it is.
   document's writing.
 
 ## Step 11 — Submission packaging
-- **Figure resolution is below every journal floor and must be raised here.** Surveyed 2026-09-12:
-  `make_figures.py` and `make_pipeline_fig.py` write at `dpi=150`, `make_paper_tier1_figs.py` and
-  `make_paper_extra_figs.py` at `dpi=160`, and the conformal, heatmap, and PIT figures at
-  `dpi=200`. Journals in this space typically require 300 or more for raster figures (PLOS asks
-  300-600 for TIFF). Set one shared constant and regenerate everything once the venue's exact
-  requirement is known, rather than guessing a target now.
+- **Figure resolution — DONE 2026-09-12.** All seven figure scripts were writing at 150, 160, or
+  200 dpi, below every candidate venue's floor. Raised to 300 across the board (a safe floor
+  everywhere: PLOS asks 300-600, and 300 is the common minimum elsewhere) and regenerated all 12
+  `paper_*.png` figures plus the EDA set. Layout is unaffected by construction, since matplotlib
+  figure size is specified in inches and dpi only changes pixel density; confirmed by both
+  documents compiling to the same 25 and 11 pages. PDFs are now 2.0 MB and 0.8 MB, well inside
+  submission limits. If the chosen venue wants vector figures (EPS/PDF) rather than raster, that is
+  a separate change: swap the `savefig` extension, since every figure is matplotlib-native and
+  nothing depends on the raster format.
 - Prepare the post-acceptance formatting package early (figures as separate files, SI as a
   separate PDF, cover letter, any reviewer suggestions) even though PLOS's initial submission is
   format-free, so this isn't a scramble after a provisional accept.

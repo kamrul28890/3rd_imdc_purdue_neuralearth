@@ -59,7 +59,7 @@ def design_figure():
                frameon=False, fontsize=8, ncol=3, loc="upper center", bbox_to_anchor=(0.5, -0.12))
     axB.spines[["top", "right", "left"]].set_visible(False)
     fig.tight_layout()
-    fig.savefig(FIGURES_DIR / "paper_design.png", dpi=160, bbox_inches="tight")
+    fig.savefig(FIGURES_DIR / "paper_design.png", dpi=300, bbox_inches="tight")
     plt.close(fig)
     print("wrote paper_design.png")
 
@@ -87,7 +87,7 @@ def skill_map():
     ax.set_title("State-level forecast skill, conformal ensemble", loc="left", fontsize=12, fontweight="bold")
     ax.axis("off")
     fig.tight_layout()
-    fig.savefig(FIGURES_DIR / "paper_skill_map.png", dpi=160, bbox_inches="tight")
+    fig.savefig(FIGURES_DIR / "paper_skill_map.png", dpi=300, bbox_inches="tight")
     plt.close(fig)
     print("wrote paper_skill_map.png")
 

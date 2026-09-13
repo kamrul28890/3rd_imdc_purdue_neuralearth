@@ -59,7 +59,7 @@ def _wis_by_fold(df):
         ax.spines[s].set_visible(False)
     ax.grid(axis="y", lw=0.5)
     plt.tight_layout()
-    plt.savefig(FIGURES_DIR / "paper_wis_by_fold.png", dpi=150, bbox_inches="tight")
+    plt.savefig(FIGURES_DIR / "paper_wis_by_fold.png", dpi=300, bbox_inches="tight")
     plt.close()
 
 
@@ -78,7 +78,7 @@ def _coverage(df):
         ax.spines[s].set_visible(False)
     ax.grid(lw=0.5)
     plt.tight_layout()
-    plt.savefig(FIGURES_DIR / "paper_coverage.png", dpi=150)
+    plt.savefig(FIGURES_DIR / "paper_coverage.png", dpi=300)
     plt.close()
 
 
@@ -113,7 +113,7 @@ def _stability(df):
         ax.spines[s].set_visible(False)
     ax.grid(lw=0.5)
     plt.tight_layout()
-    plt.savefig(FIGURES_DIR / "paper_stability.png", dpi=150, bbox_inches="tight")
+    plt.savefig(FIGURES_DIR / "paper_stability.png", dpi=300, bbox_inches="tight")
     plt.close()
 
 
@@ -142,7 +142,7 @@ def _metric_disagreement(df):
     for s in ["top", "right", "left"]:
         ax.spines[s].set_visible(False)
     plt.tight_layout()
-    plt.savefig(FIGURES_DIR / "paper_relative_wis.png", dpi=150, bbox_inches="tight")
+    plt.savefig(FIGURES_DIR / "paper_relative_wis.png", dpi=300, bbox_inches="tight")
     plt.close()
 
 

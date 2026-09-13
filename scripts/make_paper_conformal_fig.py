@@ -74,5 +74,5 @@ axB.spines[["top", "right"]].set_visible(False)
 
 fig.tight_layout()
 out = FIGURES_DIR / "paper_conformal.png"
-fig.savefig(out, dpi=200, bbox_inches="tight")
+fig.savefig(out, dpi=300, bbox_inches="tight")
 print("wrote", out)

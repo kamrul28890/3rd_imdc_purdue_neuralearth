@@ -108,7 +108,7 @@ axes[0, 0].text(
 
 fig.tight_layout()
 out = FIGURES_DIR / "paper_pit.png"
-fig.savefig(out, dpi=200, bbox_inches="tight")
+fig.savefig(out, dpi=300, bbox_inches="tight")
 print("wrote", out)
 
 for model, title in PANELS:

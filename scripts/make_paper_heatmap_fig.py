@@ -64,7 +64,7 @@ def main():
     ax.set_title("Per-state skill relative to the seasonal-naive baseline, averaged over four seasons",
                  loc="left", fontsize=11)
     plt.tight_layout()
-    plt.savefig(FIGURES_DIR / "paper_state_heatmap.png", dpi=200, bbox_inches="tight")
+    plt.savefig(FIGURES_DIR / "paper_state_heatmap.png", dpi=300, bbox_inches="tight")
     plt.close()
     print("Wrote paper_state_heatmap.png")
 
