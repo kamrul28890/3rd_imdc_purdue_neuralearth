@@ -484,7 +484,7 @@ tracks the diagonal at the outer intervals.}
 \subsection{Skill varies with horizon, and the outbreak failure is under-prediction}\label{sec:robustness}
 Because the 15-week reporting gap places every target 16 to 67 weeks ahead, we stratified skill by
 lead time on the ordinary seasons (Fig~\ref{fig:robustness}A). The deep network's advantage is
-horizon-dependent: it is the strongest of the four models stratified here at short lead times (normalized WIS 0.255 at 16 to 27 weeks, bettered only by its pinball-trained variant at 0.227, Section~ef{sec:extended})
+horizon-dependent: it is the strongest of the four models stratified here at short lead times (normalized WIS 0.255 at 16 to 27 weeks, bettered only by its pinball-trained variant at 0.227, Section~\ref{sec:extended})
 but degrades at the longest horizons (0.388 at 52 to 67 weeks), where both the conformal ensemble
 (0.338) and the gradient-boosted model (0.349) overtake it. The conformal ensemble is the most
 stable model across horizons and is never
@@ -774,7 +774,7 @@ percent of its own peak (onset), the timing and log-magnitude error at the true 
 Section~\ref{sec:noseason}), and the log-ratio of predicted to observed total season cases
 (Table~\ref{tab:operational}). No model wins on every one of these summaries, which is the same
 qualitative pattern as the main WIS results but on a different, more directly interpretable set of
-outputs. Among the models in Table~ef{tab:operational}, the gradient-boosted model (XGBoost) has the lowest onset-timing error (3.7 weeks mean
+outputs. Among the models in Table~\ref{tab:operational}, the gradient-boosted model (XGBoost) has the lowest onset-timing error (3.7 weeks mean
 absolute
 error, against 3.8 for the conformal ensemble), the climatological model has the lowest peak-timing
 error (4.5 weeks, against 4.9 for the ensemble), and the gradient-boosted model again gives the

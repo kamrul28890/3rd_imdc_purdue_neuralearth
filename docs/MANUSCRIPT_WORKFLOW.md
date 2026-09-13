@@ -7,6 +7,17 @@ items from `docs/MANUSCRIPT_GAP_AUDIT.md` (the diagnosis) using the exact checkl
 overall structure/outline/writing-style rules (§0 there is binding for every edit in every step
 below) — this document does not repeat it, only sequences the remaining work.
 
+**Mandatory verification gates after any edit** (the first two are not enough on their own):
+1. Two `pdflatex` passes, zero errors, zero `undefined` warnings.
+2. `grep -c "—"` returns 0 in both files; no UK spellings (`colour`, `centred`, `labelled`).
+3. **Stripped-command scan.** `pdflatex` reports nothing when a backslash is lost, because
+   `Section~ef{sec:extended}` is valid literal text, not a broken command. This happened twice on
+   2026-09-13: a Python replacement string containing `\ref` had its backslash consumed, turning
+   `\r` into a carriage return, and both documents compiled clean while the PDF printed raw
+   `ef{...}`. Check the rendered output, not the source: `pdftotext imdc_paper.pdf - | grep -c
+   "ef{\|extbf{\|citep{\|emph{"` must be 0. Prefer the Edit tool over scripted string replacement
+   for any text containing backslashes.
+
 **How to use this:** work one step at a time; do not skip ahead. Each step ends with a compile +
 verification gate (matching this project's own established discipline: run the fast test suite
 and both `pdflatex` passes before calling a step done, the same way every code change in this
