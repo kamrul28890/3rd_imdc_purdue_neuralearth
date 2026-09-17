@@ -18,6 +18,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # The dataset is in Git LFS (~800 MB) and checkout skips LFS by default, which left
+      # pointer files where the .csv.gz data should be. Cache the LFS objects keyed on their
+      # hashes so they're downloaded once, not on every run (LFS bandwidth is metered).
+      - name: List LFS object ids for the cache key
+        run: git lfs ls-files --long | cut -d ' ' -f1 | sort > .lfs-assets-id
+      - uses: actions/cache@v4
+        with:
+          path: .git/lfs
+          key: lfs-${{ hashFiles('.lfs-assets-id') }}
+      - name: Fetch LFS data (from cache when available)
+        run: git lfs pull
       - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
@@ -35,6 +46,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # The dataset is in Git LFS (~800 MB) and checkout skips LFS by default, which left
+      # pointer files where the .csv.gz data should be. Cache the LFS objects keyed on their
+      # hashes so they're downloaded once, not on every run (LFS bandwidth is metered).
+      - name: List LFS object ids for the cache key
+        run: git lfs ls-files --long | cut -d ' ' -f1 | sort > .lfs-assets-id
+      - uses: actions/cache@v4
+        with:
+          path: .git/lfs
+          key: lfs-${{ hashFiles('.lfs-assets-id') }}
+      - name: Fetch LFS data (from cache when available)
+        run: git lfs pull
       - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
