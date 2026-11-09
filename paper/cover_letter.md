@@ -32,7 +32,10 @@ Four results generalize beyond this challenge:
    estimated on one tuning season and applied unchanged elsewhere improve mean WIS from 1234 to
    1162 and normalized WIS from 0.595 to 0.561, a 6.2 percent out-of-sample reduction. The gain is
    asymmetric by design: 277 WIS units recovered in the outbreak season against costs of 5 and 9
-   units in ordinary ones.
+   units in ordinary ones. Scored state by state against the challenge organizers' reference model,
+   the single factor over-widens low-burden states. A size-aware variant that scales intervals by
+   state burden keeps that per-state skill and stays within 1 percent of the best mean WIS. Its
+   frozen 2026–27 forecast is the prospective test.
 4. **Added complexity did not pay.** Observed-climate covariates, hierarchical spatial pooling, a
    hyperparameter search, and an alternative ensemble-combination rule each failed to improve
    forecasts where it mattered. We report these as findings, including one case where our own

@@ -63,3 +63,65 @@ def test_clip_nonnegative_floors_at_zero_and_stays_monotone():
     assert vals.min() == 0.0
     assert out["upper_95"].iloc[0] == 8.0   # positive values untouched
     assert np.all(np.diff(vals) >= 0)       # still nested after clipping
+
+
+# --- size-aware (burden-scaled) recalibration -------------------------------------------------
+from imdc.evaluation.postprocess import apply_size_aware_scale, fit_size_aware_scale, state_burden_index
+
+
+def _wide_row(uf, pred, lo95, hi95, y=None):
+    row = {"uf": uf, "pred": float(pred)}
+    for i, level in enumerate([50, 80, 90, 95]):
+        frac = (i + 1) / 4
+        row[f"lower_{level}"] = pred - frac * (pred - lo95)
+        row[f"upper_{level}"] = pred + frac * (hi95 - pred)
+    if y is not None:
+        row["observed_value"] = float(y)
+    return row
+
+
+def test_size_aware_scale_is_log_space_about_median_and_burden_dependent():
+    wide = pd.DataFrame([_wide_row("SMALL", 100, 20, 500), _wide_row("BIG", 100, 20, 500)])
+    z = pd.Series({"SMALL": -1.0, "BIG": 1.0})
+    out = apply_size_aware_scale(wide, z, a=1.0, b=0.2)
+    np.testing.assert_allclose(out["pred"], 100.0)                       # median untouched
+    m = np.log1p(100)
+    for uf, s in [("SMALL", 0.8), ("BIG", 1.2)]:
+        r = out[out["uf"] == uf].iloc[0]
+        assert r["upper_95"] == pytest.approx(np.expm1(m + s * (np.log1p(500) - m)))
+        assert r["lower_95"] == pytest.approx(np.expm1(m + s * (np.log1p(20) - m)))
+        assert r["lower_95"] >= 0 and np.all(np.diff(r[QUANTILE_COLUMNS].to_numpy(dtype=float)) >= 0)
+    small, big = out.iloc[0], out.iloc[1]
+    assert small["upper_95"] - small["lower_95"] < 480 < big["upper_95"] - big["lower_95"]
+
+
+def test_size_aware_identity_and_missing_state():
+    wide = pd.DataFrame([_wide_row("AC", 10, 2, 40)])
+    out = apply_size_aware_scale(wide, pd.Series({"AC": 0.3}), a=1.0, b=0.0)
+    np.testing.assert_allclose(out[QUANTILE_COLUMNS].to_numpy(float), wide[QUANTILE_COLUMNS].to_numpy(float))
+    with pytest.raises(ValueError):
+        apply_size_aware_scale(wide, pd.Series({"SP": 0.0}), a=1.0, b=0.1)
+
+
+def test_fit_size_aware_sharpens_overwide_small_state_without_hurting_pooled_wis():
+    # Small state: intervals far too wide for observations at the median -> sharpening helps it.
+    # Big state: observations land outside the intervals -> it needs widening, and dominates the
+    # pooled WIS, so a uniform sharpening would be rejected by the constraint but b > 0 is not.
+    rows = [_wide_row("SMALL", 10, 1, 200, y=10) for _ in range(20)]
+    rows += [_wide_row("BIG", 10_000, 8_000, 12_000, y=14_000) for _ in range(20)]
+    calib = pd.DataFrame(rows)
+    z = pd.Series({"SMALL": -1.0, "BIG": 1.0})
+    fit = fit_size_aware_scale(calib, z)
+    assert fit["b"] > 0
+    assert fit["objective"] < fit["objective_unscaled"]
+    assert fit["pooled_wis"] <= fit["pooled_wis_unscaled"]
+
+
+def test_state_burden_index_uses_only_data_up_to_cutoff():
+    dates = pd.date_range("2016-01-03", periods=10, freq="W")
+    cases = pd.concat([pd.DataFrame({"uf": "A", "date": dates, "casos": 10}),
+                       pd.DataFrame({"uf": "B", "date": dates, "casos": 1000})])
+    late = pd.DataFrame({"uf": "A", "date": [pd.Timestamp("2030-01-06")], "casos": [10**9]})
+    z = state_burden_index(pd.concat([cases, late]), cutoff=dates[-1])
+    assert z["A"] < 0 < z["B"] and z.mean() == pytest.approx(0)
+    assert z.equals(state_burden_index(cases, cutoff=dates[-1]))

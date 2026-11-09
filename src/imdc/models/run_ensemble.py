@@ -8,9 +8,13 @@ os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
 
 import pandas as pd
 
-from imdc.config import METRICS_DIR
+from imdc.config import METRICS_DIR, QUANTILE_COLUMNS
+from imdc.data.aggregate import aggregate_cases_to_state
+from imdc.data.folds import get_folds
+from imdc.data.loaders import load_cases
 from imdc.evaluation.harness import normalized_wis
-from imdc.evaluation.postprocess import apply_conformal_widen, conformal_widen_factors
+from imdc.evaluation.postprocess import SIZE_AWARE_BOUNDS, apply_conformal_widen, apply_size_aware_scale, \
+    conformal_widen_factors, fit_size_aware_scale, state_burden_index
 from imdc.models.ensemble import inverse_wis_weights, score_wide, vincentization, weighted_ensemble
 
 # Fold used to calibrate ensemble weights AND the conformal recalibration factors (kept out of
@@ -34,6 +38,31 @@ CALIB_FOLD = 1
 # still loaded below for the leaderboard's own comparison table.
 MEMBERS = ["climatological_quantile", "xgb_quantile", "gru_negbin"]
 SCORE_COLS = ["wis", "coverage_50", "coverage_80", "coverage_90", "coverage_95"]
+
+
+def size_aware_recalibrate(scored: pd.DataFrame, base_model: str, name: str, disease: str,
+                           calib_fold: int = CALIB_FOLD) -> tuple:
+    """Size-aware (burden-scaled) recalibration of `base_model`'s scored backtest predictions.
+
+    Burden index from state cases up to the calibration fold's training cutoff; (a, b) fitted on
+    the calibration fold only (see postprocess.fit_size_aware_scale), then applied unchanged to
+    every fold. Returns (scored frame labelled `name`, params frame: one row per UF with a, b,
+    burden_z and the resulting scale s_u).
+    """
+    cutoff = next(f for f in get_folds(disease) if f.id == calib_fold).train_cutoff
+    z = state_burden_index(aggregate_cases_to_state(load_cases(disease)), cutoff)
+    base = scored[scored["model"] == base_model].drop(columns=["model"]).reset_index(drop=True)
+    keep = [c for c in base.columns if c in ("disease", "uf", "date", "fold_id", "horizon_weeks",
+                                               "origin_date", "observed_value") or c in QUANTILE_COLUMNS]
+    base = base[keep]
+    fit = fit_size_aware_scale(base[base["fold_id"] == calib_fold].reset_index(drop=True), z)
+    out = score_wide(apply_size_aware_scale(base, z, fit["a"], fit["b"]))
+    out["model"] = name
+    params = z.rename_axis("uf").reset_index().assign(
+        disease=disease, base_model=base_model, a=fit["a"], b=fit["b"], calib_fold=calib_fold,
+        burden_cutoff=cutoff.date().isoformat())
+    params["scale"] = (params["a"] + params["b"] * params["burden_z"]).clip(*SIZE_AWARE_BOUNDS)
+    return out, params, fit
 
 
 def _load_all():
@@ -63,7 +92,15 @@ def main():
     vincent_cal["model"] = "ensemble_conformal"
     pd.Series(cfactors, name="factor").rename_axis("interval_level").to_csv(METRICS_DIR / "conformal_factors.csv")
 
-    combined = pd.concat([allpreds, vincent, invwis, vincent_cal], ignore_index=True)
+    # Size-aware recalibration (2026-11): the conformal factors above are fit to pooled coverage,
+    # which SP/MG dominate, and over-widen low-burden states under a per-state metric such as the
+    # organizers' Rv (paper Sec. "official"). This variant rescales each state's distribution by a
+    # burden-dependent factor chosen on the tuning fold under a no-worse-pooled-WIS constraint.
+    vincent_sa, sa_params, sa_fit = size_aware_recalibrate(vincent, "ensemble_vincent",
+                                                           "ensemble_size_aware", "dengue")
+    sa_params.to_csv(METRICS_DIR / "size_aware_params.csv", index=False)
+
+    combined = pd.concat([allpreds, vincent, invwis, vincent_cal, vincent_sa], ignore_index=True)
     combined.to_csv(METRICS_DIR / "final_scored.csv", index=False)
 
     leaderboard = combined.groupby("model")[SCORE_COLS].mean().reset_index().sort_values("wis")
@@ -87,6 +124,8 @@ def main():
 
     print(f"Inverse-WIS weights (tuned on fold {CALIB_FOLD}):", {k: round(v, 3) for k, v in weights.items()})
     print(f"Conformal widen factors (tuned on fold {CALIB_FOLD}):", {k: round(v, 2) for k, v in cfactors.items()})
+    print(f"Size-aware scale (tuned on fold {CALIB_FOLD}): a={sa_fit['a']:.2f} b={sa_fit['b']:.2f} "
+          f"(fold-1 pooled WIS {sa_fit['pooled_wis_unscaled']:.1f} -> {sa_fit['pooled_wis']:.1f})")
     print("\n=== Final leaderboard (overall mean WIS) ===")
     print(leaderboard.to_string(index=False))
     print("\n=== Official NORMALIZED WIS (sum WIS / sum cases; lower=better) ===")

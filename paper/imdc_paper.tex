@@ -37,7 +37,7 @@ Dengue is expanding across Brazil; 2024 produced a record epidemic roughly four 
 year. Accurate, calibrated probabilistic forecasts support preparedness, but which of statistical,
 machine-learning, deep-learning, and mechanistic approaches forecasts best, especially under an
 outbreak year's distribution shift, is unsettled. We report a reproducible, leakage-controlled
-comparison of five probabilistic forecasting model families, 24 models and variants in total, for the 3rd Infodengue--Mosqlimate
+comparison of five probabilistic forecasting model families, 25 models and variants in total, for the 3rd Infodengue--Mosqlimate
 Dengue Challenge (IMDC 2026), which requires weekly, state-level, full-interval forecasts for the
 26 mandatory Brazilian states. All models are evaluated through a single backtesting harness over
 four official retrospective seasons, one of which contains the 2024 outbreak, and scored by the
@@ -51,7 +51,11 @@ their overconfidence, improves accuracy and calibration at negligible cost (mean
 magnitude-weighted score, 1234 to 1162; normalized WIS, its scale-free counterpart, 0.595 to
 0.561; out-of-sample reduction of 6.2 percent), acting as asymmetric insurance: little cost in an
 ordinary season, but it prevents the catastrophic under-prediction an extreme one would otherwise
-cause. Fourth, added model complexity did not pay: observed-climate covariates and hierarchical
+cause. The right recalibration is itself metric-dependent: scored state by state against the
+challenge organizers' reference model, the single conformal factor over-widens low-burden states,
+and a size-aware variant that scales each state's intervals by its historical burden keeps per-state
+skill (geometric-mean WIS ratio to the reference 0.916, against 0.989 for conformal) while
+recovering 85 percent of the conformal gain in mean WIS. Fourth, added model complexity did not pay: observed-climate covariates and hierarchical
 spatial pooling both failed to improve forecasts, and an internal-holdout hyperparameter gain
 reversed on the true backtest. The best model is disease-specific: for chikungunya, gradient
 boosting alone outperforms the ensemble. All code, the backtesting harness, per-state scored
@@ -139,7 +143,8 @@ magnitude or by forecasting unit, a consequence of real cross-state heterogeneit
 artifact, and we argue for reporting both (Section~\ref{sec:metric}).
 \item We introduce a conformal recalibration of the ensemble intervals that improves accuracy and
 calibration at negligible cost and functions as asymmetric insurance against catastrophic
-under-prediction (Section~\ref{sec:conformal}).
+under-prediction (Section~\ref{sec:conformal}), and show that a size-aware variant is preferable
+when each state's forecast counts equally (Section~\ref{sec:sizeaware}).
 \item We document informative negative results: added covariates, hierarchical pooling,
 hyperparameter tuning, and an alternative ensemble-combination rule each failed to improve
 forecasts where it mattered most, which clarifies where the predictable signal in this problem
@@ -279,7 +284,7 @@ member reaches.}
 \end{figure}
 
 \subsection{An ensemble is the most robust model, and conformal recalibration makes it the most
-accurate}\label{sec:conformal}
+accurate on pooled WIS}\label{sec:conformal}
 Because different models win different seasons, a combination that is never worst is attractive. An
 unweighted per-quantile median ensemble, Vincentization, meaning that at every quantile level (the
 median, the 2.5th percentile, and so on) we take the median of the three models' values at that
@@ -315,7 +320,9 @@ is 6.2 percent. The gain is concentrated in the outbreak season (fold 2 WIS 3574
 cost in ordinary seasons, so the recalibration behaves as asymmetric insurance: it widens the outer
 tails just enough to blunt catastrophic under-prediction in an extreme year while barely affecting
 normal seasons. Recalibrating the ensemble output outperforms recalibrating any single member,
-because the per-quantile median across members otherwise dilutes a single member's widening.
+because the per-quantile median across members otherwise dilutes a single member's widening. The
+same factors cost skill when every state counts equally; a size-aware variant
+(Section~\ref{sec:sizeaware}) gives up under 1 percent of this mean-WIS lead to recover it.
 
 \begin{table}[t]
 \centering\small
@@ -323,8 +330,9 @@ because the per-quantile median across members otherwise dilutes a single member
 magnitude-weighted; normalized WIS (sum of WIS divided by sum of cases) is the challenge's headline
 metric and is reported for all folds and excluding the 2024 outlier. Coverage nearer the nominal
 50/80/90/95 is better. Best value in each column is in bold. The surge template and the
-pinball-trained GRU come from the extended set of Section~\ref{sec:extended}; S5 Table lists all
-24 models and variants evaluated, including those not retained.}
+pinball-trained GRU come from the extended set of Section~\ref{sec:extended}, and the size-aware
+ensemble from Section~\ref{sec:sizeaware}; S5 Table lists all 25 models and variants evaluated,
+including those not retained.}
 \label{tab:leaderboard}
 \begin{tabular}{@{}lrrrcccc@{}}
 \toprule
@@ -334,6 +342,7 @@ pinball-trained GRU come from the extended set of Section~\ref{sec:extended}; S5
 \midrule
 Ensemble (conformal)      & \textbf{1162} & \textbf{0.561} & 0.375 & 46 & 74 & 87 & 94 \\
 Surge template            & 1168 & 0.564 & 0.447 & 64 & 88 & 93 & 96 \\
+Ensemble (size-aware)     & 1173 & 0.566 & 0.368 & 42 & 72 & 82 & 87 \\
 XGBoost                   & 1190 & 0.575 & 0.434 & 48 & 79 & 88 & 92 \\
 Ensemble (Vincentization) & 1234 & 0.595 & 0.371 & 43 & 72 & 82 & 86 \\
 Ensemble (inverse-WIS)    & 1238 & 0.598 & \textbf{0.358} & 44 & 74 & 84 & 89 \\
@@ -821,6 +830,120 @@ season-total number, like a single aggregate WIS, can be sensitive to incidental
 and should not be read in isolation from the other columns.
 \end{table}
 
+\subsection{The challenge organizers' independent evaluation agrees, and qualifies the
+recalibration}\label{sec:official}
+Every result above comes from our own harness. The challenge organizers scored all submitted
+validation forecasts independently \citep{imdc2026results}, against their own reference model, a
+Bayesian model with no covariates, rather than our seasonal-naive baseline. Their score is the ratio
+$R_v$ of a model's mean WIS to the reference's in one state and validation season, so $R_v<1$ beats
+the reference. Our submitted dengue ensemble was one of five models that beat the reference in a
+stable fashion, with a geometric-mean $R_v$ of 0.932 over all states, and it beat the reference in
+more states than any of the other four (20 of 26; they score 16 to 18). The five are close on mean
+skill: their geometric means span only 0.891 to 0.932. We reproduced this evaluation from the
+platform's own stored predictions for all 43 models registered to the 2026 challenge, scored with our
+WIS implementation. Our submission scores 0.933 and 20 states, matching the official figures. On the
+organizers' stability axis (the standard deviation of $\log R_v$ over state-season pairs) it scores
+0.283, tied for the lowest of the five with the EMAp Prophet model (0.276; the other three, 0.339 to
+0.536). Outside the stable group, EMAp's state-level SARIMAX model scores better on mean skill
+(0.853, 21 states) with a larger spread (0.492). For chikungunya, which the official summary does
+not tabulate in full, our LightGBM model scores 0.723 with 19 states below 1, third of 12 complete
+submissions behind two variants of EMAp's SARIMAX model (0.635 and 0.679), and tied with both for
+the most states. By season, the dengue submission scores 0.952, 0.944, 0.832 and
+1.014 over 2022--23 to 2025--26, so it loses narrowly to the reference only in the partially resolved
+fourth season. The six states where its multi-season $R_v$ exceeds 1 are GO, RR, AM, MA, PI and RS,
+mostly in the North and Northeast; RS reflects one season ($R_v=2.79$ in 2025--26).
+
+The same per-state metric qualifies the conformal result of Section~\ref{sec:conformal}. The
+validation forecast the organizers scored carries the Vincentization ensemble's intervals; the
+recalibration was applied to the forecast-phase submission. Rescoring our own backtest against the
+organizers' reference, the Vincentization ensemble scores 0.926 and the conformal ensemble 0.989,
+worse in all four seasons. The two results do not conflict. Pooled mean WIS is dominated by the
+highest-burden states, where widening the outer tails pays for itself in 2024; a geometric mean of
+per-state ratios weights every state equally, and a single multiplicative factor (1.86 at the 95
+percent level) over-widens the intervals of low-burden states. Which recalibration is better
+therefore depends on whether the forecast user's loss is national (pooled cases) or per state, the
+same metric dependence as Section~\ref{sec:metric}, and it motivates a recalibration that serves
+both.
+
+\subsection{A size-aware recalibration serves both metrics}\label{sec:sizeaware}
+The size-aware recalibration replaces the single global factor with one that grows with a state's
+burden (Section~\ref{sec:methods-sizeaware}). Each state's whole predictive distribution is rescaled
+about its median, in log space, by $s_u=a+b\,z_u$, where $z_u$ is the state's standardized log mean
+weekly case count before the tuning season. Both parameters are fitted on the 2022--23 tuning season
+alone. They minimize the mean over states of the log of mean WIS, which has the same minimizer as
+the organizers' geometric-mean $R_v$ against any fixed reference, subject to a pooled mean WIS no
+worse than the unscaled ensemble's. The rule selects $a=1.00$ and $b=0.10$, which sharpens the
+intervals by up to 23 percent in the smallest states (RR, AP) and widens them by up to 20 percent
+in the largest (SP, MG). Against the organizers' reference, the size-aware ensemble scores 0.916
+with 20 states below 1 (0.926 for the plain ensemble, 0.989 for the conformal one), and 0.931,
+0.934, 0.759 and 1.065 by season. Its pooled mean WIS is 1173, so it recovers 85 percent of the
+conformal ensemble's gain over the plain ensemble (1234 to 1162); its normalized WIS is 0.566 over
+all seasons and 0.368 without 2024 (Table~\ref{tab:leaderboard}). In paired comparisons it beats
+the plain ensemble on mean WIS by 60.6 (95 percent CI $[46.0, 77.2]$), and it beats the conformal
+ensemble on $R_v$ by a factor of 0.926 ($[0.905, 0.947]$, bootstrapped over the 104 state-season
+pairs). It loses to the conformal ensemble on mean WIS by 10.7 ($[5.7, 16.2]$), under 1 percent,
+and its $R_v$ gain over the plain ensemble (a factor of 0.988, $[0.974, 1.001]$) is not
+significant. It is thus not a strict improvement on either parent. It is, however, the only one of
+the three within 1 percent of the best on both metrics: the conformal ensemble is 8 percent worse
+than it on $R_v$, and the plain ensemble 5 percent worse on mean WIS. The cost is tail calibration.
+Because the rule sharpens small states, its coverage (42/72/82/87 percent) stays as narrow as the
+plain ensemble's and does not reach the conformal ensemble's 46/74/87/94.
+
+Two simpler alternatives did worse. A single sharpening factor for every state, tuned on the same
+season (0.75), reaches an $R_v$ of 0.885 but raises pooled mean WIS to 1355 and cuts 90 percent
+coverage to 72 percent. Separate factors for each state, each chosen on the seasons before it,
+overfit (0.933). For chikungunya, the same rule applied to the LightGBM forecast selects no change
+($a=1$, $b=0$): on the tuning season, no burden-dependent rescaling improves the per-state score
+without raising pooled WIS. A uniform 20 percent sharpening would lower the chikungunya $R_v$ from
+0.715 to 0.644, but it would raise pooled mean WIS from 79 to 83, which is the same trade-off.
+
+Two caveats limit these results. First, the rule was devised in November 2026, after the
+organizers' results had shown where our intervals lose. Its constraint and parameter grid were
+fixed after we had seen exploratory scores on all four seasons, and only its two parameters were
+fitted blind to the 2023--24 to 2025--26 seasons, so the backtest gain is not a clean
+out-of-sample estimate. The 2026--27 season provides that test. We froze a size-aware version of
+the submitted forecast, with identical medians and size-aware intervals, generated from data
+through EW25 2026, and committed it to the project repository on 9 November 2026, before examining
+any 2026--27 observation. That date falls four weeks into the target window, so the strict
+comparison scores only the weeks after it. Both versions will be scored when the season resolves.
+Second, the rule
+does not close the gap to the leading submissions, because their advantage is mostly in the median.
+EMAp's SARIMAX model has 90 percent intervals about a quarter narrower than ours at the same
+83 percent coverage. That is possible only because its median is more accurate: its absolute error
+is 9 percent lower than ours, both measured relative to the reference's WIS. Rescaling our intervals
+cannot reproduce a better median.
+
+\subsection{Most of the 2026--27 forecast's excess over the official ensemble is El Ni\~no}
+\label{sec:elnino}
+Only three teams fed the 2026--27 climate outlook into their forecasts, and the organizers singled
+ours out as amplifying the developing El Ni\~no most strongly, two to three times their ensemble in
+PR, SP, MG, the Center-West and BA; the official ensemble itself carries no El Ni\~no signal
+\citep{imdc2026results}. We quantified that effect by re-predicting the submitted forecast with its
+climate-outlook inputs neutralized at prediction time, leaving every fitted model unchanged. The
+regenerated forecast reproduces the submission exactly (1,088,267 cases, summing state medians over
+the 26 states). Only the gradient-boosted member sees these inputs. Setting the ENSO index to neutral
+cuts that member's season total from 1.79 to 0.78 million and the ensemble's to 0.77 million, so
+ENSO alone raises our national forecast by 42 percent. Neutralizing the IOD and PDO indices and
+removing the ECMWF seasonal forecast as well lowers it only to 0.75 million: ENSO is nearly the
+entire climate effect. Against the official ensemble (0.62 million on the same basis) our forecast
+falls from 1.74 to 1.23 times when ENSO is neutral, so ENSO accounts for 69 percent of the excess.
+In the flagged states together the ratio falls from 1.86 to 1.29. The ENSO effect is strongest in
+the South and Southeast (a factor of 2.9 in RS, 2.4 in SC, 2.0 in MG and DF, 1.65 in PR) and near
+zero in the North (at most 1.17 in AM). The remaining excess comes from the GRU member, which sees no
+ENSO input but forecasts high totals in the same states from their recent incidence. For context, the
+organizers' covariate-free reference model forecasts about 1.02 million cases over the same states,
+close to our deployed total. For chikungunya, neutral ENSO lowers our LightGBM forecast by 16 percent
+(60,488 to 51,067 cases), against 53,261 for the official ensemble.
+
+How far to trust the amplification depends on how many analogues the model learned it from. At the
+forecast origin (EW25 2026) the ENSO index had risen from 0.34 to 1.10 in seven weeks. The only
+training origin with a comparable June value is 2015 (1.55), which preceded the large 2015--16
+season; June 2023, before the record 2024 outbreak, was still 0.36. The model's El Ni\~no response
+therefore rests on essentially one prior event, and the 2026--27 season is the first out-of-sample
+test of it. Because the median ensemble takes the middle member at each quantile, the
+gradient-boosted member's 2.3-fold ENSO response reaches the ensemble only partly, which is the
+same never-worst protection that motivated combining models in Section~\ref{sec:conformal}.
+
 \section{Discussion}
 
 \subsection{Robustness under regime shift}
@@ -885,7 +1008,7 @@ spatiotemporal member that can use climate through an exposure-lag-response surf
 toward more covariates in a boosted model.
 
 \subsection{What separated the models that worked from the ones that did not}\label{sec:why}
-Across the 24 models and variants we evaluated, spanning statistical, machine-learning, deep-learning, mechanistic, and
+Across the 25 models and variants we evaluated, spanning statistical, machine-learning, deep-learning, mechanistic, and
 template-based approaches, performance tracked one property more closely than model class: how each
 model generates its prediction intervals, and therefore how those intervals behave when the target
 season is unlike the training record. WIS decomposes exactly into a dispersion penalty, paid for
@@ -896,7 +1019,7 @@ incurs is close to a design decision.
 Models that build intervals by resampling whole historical seasons, the semi-mechanistic bootstrap
 and the surge template, produce width that scales with historical variability. They pay dispersion
 continuously and are rarely caught out: on the 2024 outlier the surge template ranks third and the
-mechanistic model eighth of the twenty models for which we have per-season scores (3118 and 3371),
+mechanistic model ninth of the twenty-one models for which we have per-season scores (3118 and 3371),
 while neither is competitive in ordinary seasons, where that width is simply a cost. Models that
 derive intervals from a fitted parametric distribution, principally the two deep networks, pay
 almost no dispersion and are sharp when the season is ordinary, which is why the two of them hold
@@ -933,7 +1056,12 @@ assuming a fixed noise scale, though those methods update continuously as new da
 ours is calibrated once, on a single tuning season. Because it widens mainly the outer
 tails, it protects against the failure mode that dominates the outbreak season without materially
 degrading ordinary-season sharpness. For an operational forecaster who cannot know in advance whether
-the coming season will be ordinary or extreme, this asymmetric protection is the right default.
+the coming season will be ordinary or extreme, this asymmetric protection is the right default
+when the loss is national. When each state's forecast matters equally, the single global factor
+over-widens low-burden states (Section~\ref{sec:official}). The version to transfer then has the
+factor depend on burden rather than on each state separately (Section~\ref{sec:sizeaware}).
+Separate per-state factors overfit, while a two-parameter burden rule keeps the per-state skill and
+gives up under 1 percent of the national gain.
 
 \subsection{Limitations}
 The fourth backtest season is only partially resolved in the available data and is reported
@@ -941,8 +1069,11 @@ separately; its numbers will firm up as the 2025--26 season completes. Municipal
 aggregation discards sub-state epidemic asynchrony that a municipal model could exploit. The study
 covers two diseases in one country and is retrospective; we submitted the recalibrated ensemble to
 the challenge's forecast phase (the true 2026--27 season, EW41 2026 through EW40 2027) ahead of its
-2026-09-10 deadline, but a genuine prospective score awaits that season's resolution. The comparison
-is single-team, so it does not capture the full diversity
+2026-09-10 deadline, but a genuine prospective score awaits that season's resolution. The
+size-aware recalibration (Section~\ref{sec:sizeaware}) was designed after the validation results
+were known, so only that season can test it cleanly. Our
+model-family comparison is single-team; the organizers' cross-team evaluation
+(Section~\ref{sec:official}) places it against the other submissions but does not capture the full diversity
 of approaches a multi-team sprint would, though our 26-state, four-track design covers more
 geographic and epidemiological ground than the inaugural 2024 sprint, which evaluated five highly
 endemic states and explicitly left lower-incidence, more recently affected regions untested
@@ -957,7 +1088,9 @@ notification data alone.
 
 \subsection{Future work}
 The immediate next step is scoring the submitted forecast phase once the 2026--27 season resolves,
-which will provide a genuine prospective test of the recalibrated ensemble. Beyond it, four
+which will provide a genuine prospective test of the recalibrated ensemble and, through the
+size-aware forecast we froze before the season, of the two recalibrations against each other.
+Beyond it, four
 directions follow from our results and from the challenge organizers' own stated plans. First, a
 Bayesian spatiotemporal or endemic-epidemic member with a distributed-lag non-linear climate
 response \citep{held2005,meyer2017}, which our negative result suggests is the right home for
@@ -1129,6 +1262,20 @@ recalibrating any single member. The same frozen, fold-1-derived factors are reu
 forecast phase, consistent with fitting recalibration weights only once and never on the season being
 forecast.
 
+\subsection{Size-aware recalibration}\label{sec:methods-sizeaware}
+Let $z_u$ be state $u$'s log mean weekly case count from 2015 to the tuning season's training cutoff,
+standardized across the 26 states. Every quantile $q$ of the state's forecast for a week with median
+$m$ is mapped to $\exp\{\log(1+m)+s_u[\log(1+q)-\log(1+m)]\}-1$, with
+$s_u=\min\{1.4,\max\{0.4,\,a+b\,z_u\}\}$. The median is unchanged, $s_u<1$ sharpens and $s_u>1$
+widens, and working on the $\log(1+\cdot)$ scale keeps lower bounds non-negative and stretches the
+skewed upper tail in proportion. $(a,b)$ is chosen on a grid ($a$ from 0.50 to 1.50, $b$ from
+$-0.20$ to 0.40, steps of 0.05) to minimize, on the tuning season, the mean over states of
+$\log\overline{\mathrm{WIS}}_u$, subject to pooled mean WIS no greater than that of the unscaled
+forecast; $(1,0)$, the identity, is always feasible. A geometric mean of WIS ratios against any
+fixed reference has the same minimizer, because the reference contributes a constant, so the
+criterion targets the organizers' $R_v$ without using their model. The parameters and $z_u$ are
+then frozen and applied unchanged to every season and to the forecast phase.
+
 \subsection{Reproducibility}
 All code, the backtesting harness, per-state scored predictions, and validated submission files for
 four official tracks (dengue and chikungunya, state and city level) are released. The pipeline is
@@ -1180,6 +1327,7 @@ Mosqlimate teams for curating and distributing the data.
 \bibitem{freitas2025} Freitas LP, da Cruz Ferreira DA, Lana RM, C\^amara DCP, Portella TP, Carvalho MS, et al. A statistical model for forecasting probabilistic epidemic bands for dengue cases in Brazil. \emph{Infect Dis Model} 10(4):1479--1487 (2025).
 \bibitem{sesay2026} Sesay MM, Ngunyi A, Imboga H. Probabilistic forecasting of monthly dengue cases using epidemiological and climate signals: a BiLSTM-negative binomial model versus mechanistic and count-model baselines. \emph{PLOS Glob Public Health} 6(3):e0005404 (2026).
 \bibitem{benjarattanaporn2026} Benjarattanaporn P, Adewo D, Sutton A, Lee A, Dodd PJ. Dengue forecasting models: a systematic review and network meta-analysis of relative performance. \emph{medRxiv} 2026.02.18.26346534 (2026).
+\bibitem{imdc2026results} Coelho FC. Resultados gerais do IMDC 2026 [results presentation]. In: Webinar: Preparing for the dengue season 2027. Fiocruz VideoSa\'ude; 7 Nov 2026. Available from: \url{https://www.youtube.com/watch?v=J4qQhNQx5ys}.
 \bibitem{diebold1995} Diebold FX, Mariano RS. Comparing predictive accuracy. \emph{J Bus Econ Stat} 13(3):253--263 (1995).
 \bibitem{bracher2021} Bracher J, Ray EL, Gneiting T, Reich NG. Evaluating epidemic forecasts in an interval format. \emph{PLoS Comput Biol} 17(2):e1008618 (2021).
 \bibitem{gneiting2007} Gneiting T, Raftery AE. Strictly proper scoring rules, prediction, and estimation. \emph{J Am Stat Assoc} 102(477):359--378 (2007).
