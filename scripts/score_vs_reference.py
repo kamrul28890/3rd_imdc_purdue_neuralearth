@@ -52,11 +52,13 @@ INTERNAL_SCORED = {
     "dengue": ["final_scored.csv"],
     "chikungunya": ["chik_final_scored.csv"],
 }
+# (The per-fold-order SARIMAX v2 is scored via final_scored.csv, where run_ensemble.py loads it as
+# an ensemble member, so it is not listed again here.)
 # Extended / experimental models (Sec. "Nine further models" + FUTURE_WORK.md 6b-6e), labelled
 # internal:<file stem>:<model> so variants of the same model name stay distinct.
 EXTRA_SCORED = {
     "dengue": ["surge_template_scored.csv", "climate_surge_scored.csv", "prophet_v2_scored.csv",
-               "sarimax_v2_scored.csv", "sarimax_v2_perfold_scored.csv", "gru_wis_cpu_scored.csv",
+               "sarimax_v2_scored.csv", "gru_wis_cpu_scored.csv",
                "hierarchical_scored.csv", "mechanistic_nsub_scored.csv", "xgb_recency_only_scored.csv",
                "ablation_xgb_no_climate_scored.csv", "ablation_xgb_holdout_tuned_scored.csv",
                "ablation_xgb_combined_best_scored.csv", "prophet_scored.csv", "sarimax_scored.csv"],

@@ -37,7 +37,7 @@ Dengue is expanding across Brazil; 2024 produced a record epidemic roughly four 
 year. Accurate, calibrated probabilistic forecasts support preparedness, but which of statistical,
 machine-learning, deep-learning, and mechanistic approaches forecasts best, especially under an
 outbreak year's distribution shift, is unsettled. We report a reproducible, leakage-controlled
-comparison of five probabilistic forecasting model families, 25 models and variants in total, for the 3rd Infodengue--Mosqlimate
+comparison of five probabilistic forecasting model families, 28 models and variants in total, for the 3rd Infodengue--Mosqlimate
 Dengue Challenge (IMDC 2026), which requires weekly, state-level, full-interval forecasts for the
 26 mandatory Brazilian states. All models are evaluated through a single backtesting harness over
 four official retrospective seasons, one of which contains the 2024 outbreak, and scored by the
@@ -55,7 +55,10 @@ cause. The right recalibration is itself metric-dependent: scored state by state
 challenge organizers' reference model, the single conformal factor over-widens low-burden states,
 and a size-aware variant that scales each state's intervals by its historical burden keeps per-state
 skill (geometric-mean WIS ratio to the reference 0.916, against 0.989 for conformal) while
-recovering 85 percent of the conformal gain in mean WIS. Fourth, added model complexity did not pay: observed-climate covariates and hierarchical
+recovering 85 percent of the conformal gain in mean WIS. Adding a SARIMAX member, weak on its own,
+improves the median as well, lowering that ratio to 0.884 at the conformal ensemble's mean WIS
+(1161); both variants are post hoc and are frozen for prospective test on the 2026--27 season.
+Fourth, added model complexity did not pay: observed-climate covariates and hierarchical
 spatial pooling both failed to improve forecasts, and an internal-holdout hyperparameter gain
 reversed on the true backtest. The best model is disease-specific: for chikungunya, gradient
 boosting alone outperforms the ensemble. All code, the backtesting harness, per-state scored
@@ -144,7 +147,9 @@ artifact, and we argue for reporting both (Section~\ref{sec:metric}).
 \item We introduce a conformal recalibration of the ensemble intervals that improves accuracy and
 calibration at negligible cost and functions as asymmetric insurance against catastrophic
 under-prediction (Section~\ref{sec:conformal}), and show that a size-aware variant is preferable
-when each state's forecast counts equally (Section~\ref{sec:sizeaware}).
+when each state's forecast counts equally (Section~\ref{sec:sizeaware}), and that a weak but
+differently erring SARIMAX member improves the ensemble on both metrics
+(Section~\ref{sec:sarimaxmember}).
 \item We document informative negative results: added covariates, hierarchical pooling,
 hyperparameter tuning, and an alternative ensemble-combination rule each failed to improve
 forecasts where it mattered most, which clarifies where the predictable signal in this problem
@@ -308,7 +313,8 @@ median of 100 becomes approximately [$-12$, 212], clipped to [0, 212] for non-ne
 1.86 factor: the median is never touched, only the interval stretches, and it stretches only where
 it needs to (the 80 percent interval above needed only a negligible correction). This step lifts the
 ensemble to the top of the table rather than leaving it a hedge against any one member's worst
-case: the recalibrated ensemble has the lowest mean WIS of any model we evaluated
+case: the recalibrated ensemble has the lowest mean WIS of any model we fixed before the
+challenge's validation results, a post-hoc variant (Section~\ref{sec:sarimaxmember}) matching it
 (1162, against 1234 for the plain ensemble and 1190 for the best of the three deployed families,
 XGBoost; normalized WIS 0.561 versus 0.595) and is better
 calibrated at the tails (empirical coverage 46/74/87/94 versus 43/72/82/86), as shown in
@@ -329,10 +335,12 @@ same factors cost skill when every state counts equally; a size-aware variant
 \caption{\textbf{Overall dengue backtest.} Averaged over four seasons and 26 states. Mean WIS is
 magnitude-weighted; normalized WIS (sum of WIS divided by sum of cases) is the challenge's headline
 metric and is reported for all folds and excluding the 2024 outlier. Coverage nearer the nominal
-50/80/90/95 is better. Best value in each column is in bold. The surge template and the
-pinball-trained GRU come from the extended set of Section~\ref{sec:extended}, and the size-aware
-ensemble from Section~\ref{sec:sizeaware}; S5 Table lists all 25 models and variants evaluated,
-including those not retained.}
+50/80/90/95 is better. Best value among the models fixed before the challenge's validation
+results is in bold. The surge template and the pinball-trained GRU come from the extended set of
+Section~\ref{sec:extended}. $^\dagger$Post-hoc variants, devised after those results
+(Sections~\ref{sec:sizeaware} and~\ref{sec:sarimaxmember}); the SARIMAX-augmented one has the best
+value in all three accuracy columns. S5 Table lists all 28 models and variants evaluated, including
+those not retained.}
 \label{tab:leaderboard}
 \begin{tabular}{@{}lrrrcccc@{}}
 \toprule
@@ -340,9 +348,10 @@ including those not retained.}
 \cmidrule(l){5-8}
  & & \textbf{all} & \textbf{ex-2024} & 50 & 80 & 90 & 95 \\
 \midrule
+Ensemble + SARIMAX (size-aware)$^\dagger$ & 1161 & 0.560 & 0.328 & 47 & 79 & 88 & 92 \\
 Ensemble (conformal)      & \textbf{1162} & \textbf{0.561} & 0.375 & 46 & 74 & 87 & 94 \\
 Surge template            & 1168 & 0.564 & 0.447 & 64 & 88 & 93 & 96 \\
-Ensemble (size-aware)     & 1173 & 0.566 & 0.368 & 42 & 72 & 82 & 87 \\
+Ensemble (size-aware)$^\dagger$ & 1173 & 0.566 & 0.368 & 42 & 72 & 82 & 87 \\
 XGBoost                   & 1190 & 0.575 & 0.434 & 48 & 79 & 88 & 92 \\
 Ensemble (Vincentization) & 1234 & 0.595 & 0.371 & 43 & 72 & 82 & 86 \\
 Ensemble (inverse-WIS)    & 1238 & 0.598 & \textbf{0.358} & 44 & 74 & 84 & 89 \\
@@ -537,12 +546,12 @@ outbreak season, where it scores 3118, the best in Table~\ref{tab:byfold}, becau
 resampling whole historical seasons produces intervals that widen when the target is unlike the
 recent past. The two first-pass classical models make the same point far more starkly. Prophet
 records the best outbreak-season score of any model we built, 2812, and SARIMAX the second best,
-2979, yet they finish last and 16th of 24 overall, because the very wide intervals that cover the
+2979, yet overall Prophet finishes last and SARIMAX behind seasonal-naive, because the very wide intervals that cover the
 2024 surge are ruinous in the ordinary seasons (fold 3 WIS 2636 and 1464 respectively).
 Outbreak-season skill alone is not evidence of a good forecaster, and the model that best covers
 the worst season in the record can still be the worst model in the study. The same width is dead weight in an ordinary season, where it over-covers badly
 (64 percent empirical coverage at the nominal 50 percent level) and pays for that in dispersion:
-its normalized WIS excluding 2024 is 0.447, eighth of the twelve models in
+its normalized WIS excluding 2024 is 0.447, tenth of the fourteen models in
 Table~\ref{tab:leaderboard}, and its
 tuning-fold normalized WIS is 0.444 against the deployed ensemble's 0.306. A model can therefore
 lead the raw aggregate while failing the criterion used to select models, which is the
@@ -568,7 +577,9 @@ percent reduction that still left it well short. For SARIMAX, the order selected
 not transfer to another regime (1752 when frozen, 1528 with a per-fold search), which is the same
 tuning-transfer failure documented in Section~\ref{sec:negative}. We report these as negative
 results rather than omitting them: at a 16 to 67 week horizon with no recent case data near the
-target, the autoregressive structure both families rely on has little left to condition on.
+target, the autoregressive structure both families rely on has little left to condition on. The
+per-fold SARIMAX is nonetheless a useful ensemble member, because it fails in different seasons
+from the others (Section~\ref{sec:sarimaxmember}).
 
 Finally, \textbf{conditioning the surge template on climate} made it worse, not better (1406 versus
 1168, degrading on every metric). Centring the forecast season's gain distribution on a regression
@@ -913,6 +924,54 @@ EMAp's SARIMAX model has 90 percent intervals about a quarter narrower than ours
 is 9 percent lower than ours, both measured relative to the reference's WIS. Rescaling our intervals
 cannot reproduce a better median.
 
+\subsection{A SARIMAX member improves the median}\label{sec:sarimaxmember}
+The one change to the median our own model set offered was the per-fold-order SARIMAX of
+Section~\ref{sec:extended}, added as a fourth ensemble member. Alone it is among our weaker models
+(mean WIS 1528, $R_v$ 1.031, with a spread of 0.785), but its errors fall in different seasons from
+the three members': on 2025--26 it is the best model we built ($R_v$ 0.636, against 1.070 for the
+plain ensemble), and it is poor on the others. The median of four members averages the middle two
+at every quantile, so SARIMAX enters the forecast only where it lies between the other members.
+The tuning-season discipline that chose the three members accepts it: on
+2022--23 it lowers pooled mean WIS from 337.9 to 327.6. Refitted on the four-member ensemble, the
+size-aware rule again selects $a=1.00$, $b=0.10$, while the refitted conformal factors fall to
+about 1 (1.04, 0.97, 0.95, 0.99) and the conformal version loses mean WIS (1212, against 1208
+unrecalibrated): with SARIMAX in, the intervals already cover on the tuning season.
+
+The size-aware four-member ensemble scores 0.884 against the organizers' reference, with 22 states
+below 1 and a spread of 0.278. The conformal four-member version ties it on $R_v$ (0.884), and no
+model of ours has more states below 1 or a lower spread. Among the complete
+submissions only EMAp's SARIMAX model scores better (0.853, spread 0.492); LNCC's ARP26 is level
+(0.882, spread 0.466), and neither beats the reference in as many states. On the pooled metrics it
+reaches mean WIS 1161, normalized WIS 0.560, and 0.328 without 2024, with coverage of
+47/79/88/92 percent, nearer nominal than either recalibration of the three-member ensemble
+(Table~\ref{tab:leaderboard}). Paired against the size-aware three-member ensemble it is better on
+both metrics: mean WIS by 12.3 (95 percent CI $[0.6, 23.8]$) and $R_v$ by a factor of 0.966
+($[0.936, 0.997]$). Against the conformal ensemble it ties on mean WIS (a difference of 1.5,
+$[-12.8, 15.9]$) and wins on $R_v$ by a factor of 0.894 ($[0.861, 0.928]$). As with the
+pinball-trained GRU (Section~\ref{sec:extended}), being a better model and being a better ensemble
+member are different properties.
+
+Three caveats apply. First, the gain rests on one season. By season the four-member ensemble scores
+0.936, 0.965, 0.747 and 0.904, against 0.931, 0.934, 0.759 and 1.065 for the size-aware
+three-member one: it is slightly worse in 2022--23 and 2024, and the whole gain comes from
+2025--26, which is only partially resolved. A fresh rerun of the SARIMAX backtest is not
+bit-identical, because the ARIMA optimizer is sensitive to floating-point details; it moves the
+overall score to 0.882 and the 2022--23 one to 0.925, so the 2022--23 deficit is within run-to-run
+noise, while the 2025--26 gain is not. Second, in the 2024 outbreak it scores 3422 against the
+conformal ensemble's 3297, and its 95 percent coverage there falls from 83 to 77 percent. That gives
+back part of the insurance of Section~\ref{sec:conformal}. It is the same kind of loss that kept
+logarithmic pooling out of the deployed ensemble (Section~\ref{sec:negative}), although smaller
+(4 percent against 10). Third, we tested this member because the organizers' results showed
+SARIMAX models leading; that the tuning-season rule accepts it does not make the choice blind.
+We therefore froze a third 2026--27 forecast, the four-member size-aware ensemble, from the same
+data through EW25 2026, with the three members identical to the submitted forecast's, and
+committed it on 9 November 2026, the same day as the size-aware one, before examining any 2026--27
+observation. Unlike the size-aware forecast, it changes the median. Its national total is
+0.84 million cases, 23 percent below the submitted 1.09 million and closer to the official
+ensemble's 0.62 million (Section~\ref{sec:elnino}), because the SARIMAX member alone forecasts
+0.40 million. The season will therefore discriminate between the forecasts. We did not build a
+chikungunya SARIMAX, so this variant is dengue only.
+
 \subsection{Most of the 2026--27 forecast's excess over the official ensemble is El Ni\~no}
 \label{sec:elnino}
 Only three teams fed the 2026--27 climate outlook into their forecasts, and the organizers singled
@@ -1008,7 +1067,7 @@ spatiotemporal member that can use climate through an exposure-lag-response surf
 toward more covariates in a boosted model.
 
 \subsection{What separated the models that worked from the ones that did not}\label{sec:why}
-Across the 25 models and variants we evaluated, spanning statistical, machine-learning, deep-learning, mechanistic, and
+Across the 28 models and variants we evaluated, spanning statistical, machine-learning, deep-learning, mechanistic, and
 template-based approaches, performance tracked one property more closely than model class: how each
 model generates its prediction intervals, and therefore how those intervals behave when the target
 season is unlike the training record. WIS decomposes exactly into a dispersion penalty, paid for
@@ -1019,7 +1078,7 @@ incurs is close to a design decision.
 Models that build intervals by resampling whole historical seasons, the semi-mechanistic bootstrap
 and the surge template, produce width that scales with historical variability. They pay dispersion
 continuously and are rarely caught out: on the 2024 outlier the surge template ranks third and the
-mechanistic model ninth of the twenty-one models for which we have per-season scores (3118 and 3371),
+mechanistic model ninth of the twenty-four models for which we have per-season scores (3118 and 3371),
 while neither is competitive in ordinary seasons, where that width is simply a cost. Models that
 derive intervals from a fitted parametric distribution, principally the two deep networks, pay
 almost no dispersion and are sharp when the season is ordinary, which is why the two of them hold
@@ -1071,7 +1130,9 @@ covers two diseases in one country and is retrospective; we submitted the recali
 the challenge's forecast phase (the true 2026--27 season, EW41 2026 through EW40 2027) ahead of its
 2026-09-10 deadline, but a genuine prospective score awaits that season's resolution. The
 size-aware recalibration (Section~\ref{sec:sizeaware}) was designed after the validation results
-were known, so only that season can test it cleanly. Our
+were known, so only that season can test it cleanly; so was the SARIMAX-augmented ensemble
+(Section~\ref{sec:sarimaxmember}), whose backtest gain rests mostly on the partially resolved
+2025--26 season. Our
 model-family comparison is single-team; the organizers' cross-team evaluation
 (Section~\ref{sec:official}) places it against the other submissions but does not capture the full diversity
 of approaches a multi-team sprint would, though our 26-state, four-track design covers more
@@ -1089,7 +1150,8 @@ notification data alone.
 \subsection{Future work}
 The immediate next step is scoring the submitted forecast phase once the 2026--27 season resolves,
 which will provide a genuine prospective test of the recalibrated ensemble and, through the
-size-aware forecast we froze before the season, of the two recalibrations against each other.
+two post-hoc forecasts we froze before examining the season, of the size-aware recalibration
+and the SARIMAX-augmented median against it.
 Beyond it, four
 directions follow from our results and from the challenge organizers' own stated plans. First, a
 Bayesian spatiotemporal or endemic-epidemic member with a distributed-lag non-linear climate
@@ -1274,7 +1336,10 @@ $\log\overline{\mathrm{WIS}}_u$, subject to pooled mean WIS no greater than that
 forecast; $(1,0)$, the identity, is always feasible. A geometric mean of WIS ratios against any
 fixed reference has the same minimizer, because the reference contributes a constant, so the
 criterion targets the organizers' $R_v$ without using their model. The parameters and $z_u$ are
-then frozen and applied unchanged to every season and to the forecast phase.
+then frozen and applied unchanged to every season and to the forecast phase. The SARIMAX-augmented
+ensemble (Section~\ref{sec:sarimaxmember}) adds the per-fold-order SARIMAX to the three members
+before the per-quantile median, with ARIMA orders selected on each fold's own training data, and
+refits its conformal factors and size-aware parameters on the tuning season in the same way.
 
 \subsection{Reproducibility}
 All code, the backtesting harness, per-state scored predictions, and validated submission files for

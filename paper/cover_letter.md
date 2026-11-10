@@ -34,8 +34,10 @@ Four results generalize beyond this challenge:
    asymmetric by design: 277 WIS units recovered in the outbreak season against costs of 5 and 9
    units in ordinary ones. Scored state by state against the challenge organizers' reference model,
    the single factor over-widens low-burden states. A size-aware variant that scales intervals by
-   state burden keeps that per-state skill and stays within 1 percent of the best mean WIS. Its
-   frozen 2026–27 forecast is the prospective test.
+   state burden keeps that per-state skill and stays within 1 percent of the best mean WIS. Adding
+   a SARIMAX member, weak on its own, also improves the median: the four-member ensemble beats the
+   reference in 22 of 26 states at the conformal ensemble's mean WIS. Both variants are post hoc,
+   and their frozen 2026–27 forecasts are the prospective test.
 4. **Added complexity did not pay.** Observed-climate covariates, hierarchical spatial pooling, a
    hyperparameter search, and an alternative ensemble-combination rule each failed to improve
    forecasts where it mattered. We report these as findings, including one case where our own

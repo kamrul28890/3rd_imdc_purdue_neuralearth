@@ -50,6 +50,11 @@ this is not promoted over v1 or into the ensemble - v1 remains the simpler, chea
 marginally better-on-balance SARIMAX result. select_orders=True is kept as an opt-in for anyone who
 wants to reproduce or build on the per-fold result; it is NOT the default (tune-once, cheap, run in
 under an hour) because the 2h43m cost buys mostly a wash, not a win.
+
+2026-11 update: as a standalone model the per-fold variant is still not promoted, but it is now the
+fourth member of the post-hoc SARIMAX-augmented ensemble (run_ensemble.py, MEMBERS_SARIMAX): its
+errors fall in different seasons from the other members' (best of our models on 2025-26), which
+helps the per-quantile median. Generator: scripts/run_sarimax_v2_perfold.py.
 """
 import numpy as np
 import pandas as pd

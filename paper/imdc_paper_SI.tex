@@ -250,7 +250,7 @@ extended set of Section 2.8; the third was evaluated and not retained.}
 \textbf{Model} & \textbf{WIS} & \textbf{nWIS} & \textbf{nWIS-ord} & \textbf{Role and outcome} \\
 \midrule
 \multicolumn{5}{@{}l}{\emph{Deployed pipeline}} \\
-Ensemble (conformal) & 1162 & 0.561 & 0.375 & Submitted model. Best mean WIS; never worst in any season \\
+Ensemble (conformal) & 1162 & 0.561 & 0.375 & Submitted model. Best mean WIS of the models fixed before the validation results; never worst in any season \\
 XGBoost & 1190 & 0.575 & 0.434 & Ensemble member; adopted over LightGBM \\
 Ensemble (Vincentization) & 1234 & 0.595 & 0.371 & Ensemble before recalibration \\
 Ensemble (inverse-WIS) & 1238 & 0.598 & 0.358 & Weighted alternative; no better than the median \\
@@ -262,7 +262,10 @@ GRU (negative-binomial) & 1394 & 0.673 & 0.385 & Ensemble member; best in ordina
 Naive & 1557 & 0.752 & 0.713 & Lower reference baseline \\
 \addlinespace
 \multicolumn{5}{@{}l}{\emph{Extended set (Section 2.8)}} \\
-Ensemble (size-aware) & 1173 & 0.566 & 0.368 & Burden-scaled recalibration (main text, size-aware section); best organizers' $R_v$ of our ensembles (0.916), within 1\% of the best mean WIS \\
+Ensemble + SARIMAX (size-aware) & 1161 & 0.560 & 0.328 & Post hoc. Per-fold SARIMAX as fourth member, size-aware scale; organizers' $R_v$ 0.884 with 22 states below 1; gain mostly from 2025--26 \\
+Ensemble + SARIMAX & 1208 & 0.583 & 0.323 & Post hoc. The four-member median before recalibration ($R_v$ 0.887) \\
+Ensemble + SARIMAX (conformal) & 1212 & 0.585 & 0.323 & Post hoc. Conformal factors refit on the tuning season fall to about 1; no mean-WIS gain \\
+Ensemble (size-aware) & 1173 & 0.566 & 0.368 & Post hoc. Burden-scaled recalibration of the three-member ensemble; $R_v$ 0.916, within 1\% of the conformal mean WIS \\
 Surge template & 1168 & 0.564 & 0.447 & Best single model by mean WIS; fails the tuning-fold check (0.444) \\
 Hierarchical climatological & 1232 & 0.595 & 0.401 & Macroregion pooling; beats its unpooled parent, hurts the ensemble \\
 Mechanistic (sub-sampled) & 1269 & 0.613 & 0.452 & Variant of the trajectory model; loses to it on all three metrics \\

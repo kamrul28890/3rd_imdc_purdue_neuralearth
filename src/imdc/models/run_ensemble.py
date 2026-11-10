@@ -37,6 +37,14 @@ CALIB_FOLD = 1
 # findings that looked good on aggregate metrics but failed the fold-1 check). lgbm_quantile is
 # still loaded below for the leaderboard's own comparison table.
 MEMBERS = ["climatological_quantile", "xgb_quantile", "gru_negbin"]
+# 2026-11: SARIMAX-augmented ensemble (paper Sec. "sizeaware"). The per-fold-order SARIMAX v2 is
+# erratic alone but strongest exactly where the three members fail (2025-26), so as a fourth
+# member under the per-quantile median it improves the median rather than just the intervals.
+# Adding it lowers fold-1 (tuning) pooled WIS, 337.9 -> 327.6, so the tuning-fold rule accepts
+# it; but it was tried after the organizers' validation results, so it is a post-hoc variant
+# whose clean test is the frozen 2026-27 forecast, not the deployed ensemble.
+SARIMAX_MEMBER = "sarimax_v2"
+MEMBERS_SARIMAX = MEMBERS + [SARIMAX_MEMBER]
 SCORE_COLS = ["wis", "coverage_50", "coverage_80", "coverage_90", "coverage_95"]
 
 
@@ -68,7 +76,7 @@ def size_aware_recalibrate(scored: pd.DataFrame, base_model: str, name: str, dis
 def _load_all():
     frames = []
     for f in ["baselines_scored.csv", "lgbm_scored.csv", "xgb_scored.csv", "gru_scored.csv",
-              "mechanistic_scored.csv"]:
+              "mechanistic_scored.csv", "sarimax_v2_perfold_scored.csv"]:
         p = METRICS_DIR / f
         if p.exists():
             frames.append(pd.read_csv(p, parse_dates=["date", "origin_date"]))
@@ -100,7 +108,19 @@ def main():
                                                            "ensemble_size_aware", "dengue")
     sa_params.to_csv(METRICS_DIR / "size_aware_params.csv", index=False)
 
-    combined = pd.concat([allpreds, vincent, invwis, vincent_cal, vincent_sa], ignore_index=True)
+    # SARIMAX-augmented ensemble: plain, conformal (factors refit on the tuning fold) and size-aware
+    # ((a, b) refit on the tuning fold), so each recalibration is compared on the same median.
+    sx_wide = vincentization(allpreds, MEMBERS_SARIMAX).assign(model="ensemble_sarimax")
+    sx = score_wide(sx_wide.drop(columns=["model"])).assign(model="ensemble_sarimax")
+    sx_cfactors = conformal_widen_factors(sx_wide[sx_wide["fold_id"] == CALIB_FOLD])
+    sx_cal = score_wide(apply_conformal_widen(sx_wide.drop(columns=["model"]), sx_cfactors))
+    sx_cal["model"] = "ensemble_sarimax_conformal"
+    sx_sa, sx_sa_params, sx_sa_fit = size_aware_recalibrate(sx, "ensemble_sarimax",
+                                                            "ensemble_sarimax_size_aware", "dengue")
+    sx_sa_params.to_csv(METRICS_DIR / "size_aware_sarimax_params.csv", index=False)
+
+    combined = pd.concat([allpreds, vincent, invwis, vincent_cal, vincent_sa, sx, sx_cal, sx_sa],
+                         ignore_index=True)
     combined.to_csv(METRICS_DIR / "final_scored.csv", index=False)
 
     leaderboard = combined.groupby("model")[SCORE_COLS].mean().reset_index().sort_values("wis")
@@ -126,6 +146,9 @@ def main():
     print(f"Conformal widen factors (tuned on fold {CALIB_FOLD}):", {k: round(v, 2) for k, v in cfactors.items()})
     print(f"Size-aware scale (tuned on fold {CALIB_FOLD}): a={sa_fit['a']:.2f} b={sa_fit['b']:.2f} "
           f"(fold-1 pooled WIS {sa_fit['pooled_wis_unscaled']:.1f} -> {sa_fit['pooled_wis']:.1f})")
+    print(f"SARIMAX-augmented: conformal factors {({k: round(v, 2) for k, v in sx_cfactors.items()})}; "
+          f"size-aware a={sx_sa_fit['a']:.2f} b={sx_sa_fit['b']:.2f} "
+          f"(fold-1 pooled WIS {sx_sa_fit['pooled_wis_unscaled']:.1f} -> {sx_sa_fit['pooled_wis']:.1f})")
     print("\n=== Final leaderboard (overall mean WIS) ===")
     print(leaderboard.to_string(index=False))
     print("\n=== Official NORMALIZED WIS (sum WIS / sum cases; lower=better) ===")
